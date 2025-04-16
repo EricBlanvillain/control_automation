@@ -60,6 +60,33 @@ body {
   padding-bottom: 0.5rem;
 }
 
+/* Title Styling */
+.title-container {
+  text-align: center; /* Keep title centered */
+  margin-bottom: 2rem; /* Space below title block */
+  padding: 1rem 0; /* Vertical padding */
+}
+
+.title-container h1 {
+  /* margin: 0 0 0.5rem 0; */ /* Remove margin-bottom */
+  margin: 0;
+  padding-bottom: 0.6rem; /* Space between text and line */
+  border-bottom: 1px solid var(--border-color); /* The separator line */
+  display: inline-block; /* Make border only as wide as text */
+  font-size: 2.8em;
+  font-weight: 700;
+  color: goldenrod; /* Changed from var(--primary-color) */
+}
+
+.title-container .subtitle {
+  margin: 0.75rem 0 0 0; /* Increased space above subtitle */
+  font-size: 1.1em;
+  font-weight: 300;
+  color: var(--text-color);
+  opacity: 0.9;
+  letter-spacing: 0.5px;
+}
+
 /* Input and Controls Section */
 .input-config-section {
   display: flex;
@@ -549,3 +576,27 @@ body {
   border-radius: 4px;
 }
 /* ------------------------ */
+
+/* --- Footer Styles --- */
+.app-footer {
+  margin-top: 2rem; /* Add space above the footer */
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 0.85em;
+  color: #9ca3af; /* Lighter gray */
+}
+
+.app-footer p {
+  margin: 0.3rem 0; /* Space between footer lines */
+}
+
+/* --- Responsive Adjustments (Optional Example) --- */
+/* @media (max-width: 768px) {
+  #App {
+    padding: 1rem;
+  }
+  .card {
+    padding: 1rem;
+  }
+} */

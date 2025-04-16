@@ -522,7 +522,10 @@ function App() {
 
   return (
     <div id="App">
-      <h1>Control Automation</h1>
+      <div className="title-container">
+        <h1>Agentic Control Center</h1>
+        <p className="subtitle">Powered by Agno AI</p>
+      </div>
 
       {/* Input & Config Section */}
       <div className="card input-config-section">
@@ -839,6 +842,12 @@ function App() {
             </form>
         )}
       </div>
+
+      {/* --- Footer --- */}
+      <footer className="app-footer">
+        <p>Disclaimer: This is a demo application. Use responsibly and verify results.</p>
+      </footer>
+      {/* --- End Footer --- */}
 
     </div>
   );
