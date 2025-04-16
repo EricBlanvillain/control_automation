@@ -112,6 +112,12 @@ body {
   transition: background-color 0.2s;
   margin-top: 1rem;
   align-self: center; /* Center button within its container */
+  /* Add positioning and flex for spinner */
+  position: relative;
+  display: inline-flex; /* Use flex to align text and spinner */
+  align-items: center;
+  justify-content: center;
+  gap: 0.75em; /* Space between text and spinner */
 }
 
 .run-button:hover {
@@ -123,6 +129,28 @@ body {
   border-color: #666;
   color: #aaa;
   cursor: not-allowed;
+}
+
+/* Spinner Styles */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block; /* Changed from block if it needs to be next to text */
+  width: 1.2em; /* Size relative to font size */
+  height: 1.2em;
+  border: 3px solid rgba(255, 255, 255, 0.3); /* Light border */
+  border-radius: 50%;
+  border-top-color: #fff; /* White top border for spin effect */
+  animation: spin 1s ease-infinite;
+  /* Removed absolute positioning, rely on flex gap */
+}
+
+/* Hide spinner when button is not loading (redundant if element is removed via JS, but safe) */
+.run-button:not(:disabled) .spinner {
+  /* display: none; */ /* Spinner element is conditionally rendered now */
 }
 
 /* Logs Section */
@@ -282,40 +310,108 @@ body {
 }
 
 .prompt-category li {
-  margin-bottom: 0.5rem;
-  font-size: 0.95em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0; /* Some vertical padding */
+  border-bottom: 1px solid var(--border-color);
+}
+
+.prompt-category li:last-child {
+  border-bottom: none;
+}
+
+.prompt-category li span {
+  flex-grow: 1; /* Allow text to take available space */
+  margin-right: 1rem; /* Space between text and buttons */
 }
 
 .prompt-category li code {
-    font-size: 0.9em;
+  background-color: var(--log-background-color);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-size: 0.9em;
 }
 
 .prompt-category li i {
-  color: #9ca3af; /* Lighter color for file path */
-  font-size: 0.9em;
+  font-size: 0.8em;
+  color: #9ca3af; /* Lighter text for path */
   margin-left: 0.5rem;
+  display: inline-block; /* Helps with alignment */
 }
 
-/* Create Prompt Form */
-.create-prompt-form {
-  margin-top: 1rem;
-  padding-top: 1rem;
+/* Container for the Edit/Delete buttons */
+.prompt-item-actions {
+    display: flex;
+    gap: 0.5rem; /* Space between edit/delete */
+    flex-shrink: 0; /* Prevent actions from shrinking */
+}
+
+/* Specific styling for Edit/Delete buttons */
+.prompt-item-actions button {
+    padding: 0.25rem 0.75rem; /* REDUCED PADDING */
+    font-size: 0.85em; /* Slightly smaller font */
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+    color: var(--text-color);
+    transition: background-color 0.2s, border-color 0.2s;
+    line-height: 1.4; /* Adjust line height if needed */
+}
+
+.prompt-item-actions button:hover {
+    /* Keep hover effects */
+}
+
+.prompt-item-actions button.edit-button:hover {
+    background-color: #5a6b80; /* Slightly lighter blue-gray */
+    border-color: #6e7e91;
+}
+
+.prompt-item-actions button.delete-button {
+    /* Optional: Add specific base style for delete if needed */
+    /* background-color: #5a2a2a; */
+}
+
+.prompt-item-actions button.delete-button:hover {
+    background-color: #b91c1c; /* Darker red on hover */
+    border-color: #991b1b;
+    color: white;
+}
+
+.prompt-item-actions button:disabled {
+    background-color: #444;
+    border-color: #555;
+    color: #888;
+    cursor: not-allowed;
+}
+
+/* --- Forms Styling --- */
+.create-prompt-form,
+.edit-prompt-form {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 1.2rem; /* Space between form groups */
+  gap: 1rem;
 }
 
-.create-prompt-form h3 {
-    margin-bottom: 0.5rem;
-    font-size: 1.2em;
+.create-prompt-form h3,
+.edit-prompt-form h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
 }
 
-.create-prompt-form .control-group {
-    gap: 0.3rem; /* Reduce gap within form control group */
+.create-prompt-form .control-group,
+.edit-prompt-form .control-group {
+  /* Inherits from general .control-group */
 }
 
-.create-prompt-form textarea {
+.create-prompt-form textarea,
+.edit-prompt-form textarea {
   width: 100%;
   padding: 0.75em 1em;
   font-size: 1em;
@@ -325,37 +421,131 @@ body {
   background-color: var(--input-background-color);
   color: var(--text-color);
   box-sizing: border-box;
+  transition: border-color 0.2s;
   resize: vertical; /* Allow vertical resize */
-  min-height: 80px;
 }
 
-.create-prompt-form textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
+.create-prompt-form textarea:focus,
+.edit-prompt-form textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
-.save-prompt-button {
-  /* Reuse run-button styles */
-  background-color: var(--success-color); /* Green for save */
+.save-prompt-button,
+.edit-prompt-form .form-actions button {
+  /* Use similar styling to run button but maybe smaller? */
+  background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 0.8em 1.5em;
-  border-radius: 8px;
-  font-size: 1.1em;
+  padding: 0.6em 1.2em;
+  border-radius: 6px;
+  font-size: 0.9em;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-top: 1rem;
-  align-self: center;
+  align-self: flex-start; /* Align button left */
 }
 
-.save-prompt-button:hover {
-  background-color: #16a34a; /* Darker green */
+.save-prompt-button:hover,
+.edit-prompt-form .form-actions button[type="submit"]:hover {
+  background-color: var(--primary-hover-color);
 }
 
-.save-prompt-button:disabled {
+.save-prompt-button:disabled,
+.edit-prompt-form .form-actions button:disabled {
   background-color: #555;
   border-color: #666;
   color: #aaa;
   cursor: not-allowed;
 }
+
+.edit-prompt-form .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.edit-prompt-form .form-actions .cancel-button {
+    background-color: var(--input-background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.edit-prompt-form .form-actions .cancel-button:hover {
+    background-color: #555;
+}
+
+/* --- File Upload Styles --- */
+.drop-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--input-background-color);
+  transition: background-color 0.2s, border-color 0.2s;
+  margin-top: 0.5rem; /* Space below label */
+}
+
+.drop-zone:hover {
+  border-color: var(--primary-color);
+  background-color: #555; /* Slightly lighter on hover */
+}
+
+.drop-zone-active {
+  border-color: var(--success-color);
+  background-color: rgba(34, 197, 94, 0.1); /* Light green background */
+}
+
+.drop-zone p {
+  margin: 0;
+  color: #ccc; /* Lighter text color */
+  font-size: 0.9em;
+}
+
+.upload-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(59, 130, 246, 0.1); /* Light blue background */
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+.upload-info code {
+  background-color: rgba(0,0,0,0.2);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  color: var(--primary-color);
+}
+
+.clear-upload-button {
+  background: none;
+  border: 1px solid var(--error-color);
+  color: var(--error-color);
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: background-color 0.2s, color 0.2s;
+  margin-left: 1rem;
+}
+
+.clear-upload-button:hover {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.upload-error-text {
+  color: var(--error-color);
+  font-size: 0.85em;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--error-background-color);
+  border: 1px solid var(--error-color);
+  border-radius: 4px;
+}
+/* ------------------------ */

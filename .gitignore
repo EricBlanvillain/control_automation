@@ -17,6 +17,7 @@ dist/
 
 # Reports (optional, if you don't want to commit them)
 reports/
+uploads/
 
 # IDE specific
 .vscode/
@@ -31,3 +32,15 @@ coverage/
 
 # DS_Store
 .DS_Store
+
+# OS-specific
+Thumbs.db
+
+# Secrets / Environment
+*.env.local
+*.env.*.local
+
+# Temp files
+*.log
+*.tmp
+*.swp

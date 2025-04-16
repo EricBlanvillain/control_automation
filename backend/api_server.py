@@ -4,7 +4,11 @@ import os
 import pathlib
 import json # To parse/create prompt files
 import time # <--- Add import for time.sleep
-from fastapi import FastAPI, HTTPException, Query
+import logging # <-- Import logging
+import shutil # <-- Import for file operations
+import secrets # <-- Import for secure random filenames
+import re # <-- IMPORT MISSING RE MODULE
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File # <-- Add UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel, Field # For validation
@@ -28,6 +32,15 @@ TARGET_BASE_DIR = "test_documents"
 # Directory where reports are stored
 REPORTS_DIR = "reports"
 PROMPTS_DIR = "prompts"
+# Directory for user uploads
+UPLOADS_DIR = "uploads"
+
+# Ensure uploads directory exists
+pathlib.Path(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+
+# Configure API Log Level (from env or default to INFO)
+API_LOG_LEVEL_STR = os.getenv('API_LOG_LEVEL', 'INFO').upper()
+API_LOG_LEVEL = getattr(logging, API_LOG_LEVEL_STR, logging.INFO)
 
 # --- Pydantic Models for Request/Response ---
 class ControlRequest(BaseModel):
@@ -74,6 +87,13 @@ class UpdatePromptRequest(BaseModel):
     expected_output_format: str
     # Note: control_id is derived from file_path usually, or part of path param
 
+# New model for upload response
+class UploadResponse(BaseModel):
+    success: bool
+    message: str
+    file_path: Optional[str] = None # Path relative to backend root
+    filename: Optional[str] = None
+
 # --- FastAPI App Initialization ---
 app = FastAPI(
     title="Control Automation API",
@@ -118,6 +138,20 @@ def is_safe_path(base_dir: str, requested_path_str: str) -> bool:
     except Exception as e:
         print(f"[is_safe_path] Exception during check: {e}")
         return False
+
+def sanitize_filename(filename: str) -> str:
+    """Removes potentially dangerous characters from a filename."""
+    # Remove path components
+    filename = os.path.basename(filename)
+    # Replace potentially problematic characters (simple example)
+    # A more robust solution would use a whitelist of allowed characters.
+    sanitized = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
+    # Limit length
+    sanitized = sanitized[:100]
+    if not sanitized:
+        sanitized = "uploaded_file"
+    print(f"[sanitize_filename] Original: '{filename}', Sanitized: '{sanitized}'")
+    return sanitized
 
 # --- API Endpoints ---
 @app.get("/")
@@ -268,43 +302,106 @@ def get_report_content(report_path: str = Query(..., description="Relative path 
         print(f"API Error: Failed to read report file {report_path}: {e}")
         raise HTTPException(status_code=500, detail="Failed to read report file.")
 
-@app.post("/api/run-controls", response_model=ControlResponse)
-def run_controls_endpoint(request: ControlRequest):
-    print(f"API: Received run request for target: {request.target_path}, Category: {request.category or 'Auto'}")
-    orchestrator = OrchestratorAgent()
-    log_capture = io.StringIO()
-    # Expects detailed results WITH scores now
-    detailed_results_with_scores: Optional[List[Dict[str, Any]]] = None
-    final_report_path: Optional[str] = None
+@app.post("/api/upload-document", response_model=UploadResponse)
+async def upload_document(file: UploadFile = File(...)):
+    """Accepts a document upload and saves it to the uploads directory."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided.")
+
+    original_filename = file.filename
+    print(f"API: Received upload request for file: {original_filename}")
+
+    # Sanitize the filename to prevent security issues
+    safe_filename = sanitize_filename(original_filename)
+    # Optional: Generate a unique filename to avoid conflicts/overwrites
+    # unique_suffix = secrets.token_hex(4)
+    # file_extension = pathlib.Path(safe_filename).suffix
+    # unique_filename = f"{pathlib.Path(safe_filename).stem}_{unique_suffix}{file_extension}"
+    # For simplicity, we'll use the sanitized name for now, but overwrites are possible.
+    save_path = pathlib.Path(UPLOADS_DIR) / safe_filename
 
     try:
-        with contextlib.redirect_stdout(log_capture):
-            # Capture DETAILED_RESULTS_WITH_SCORES and REPORT_PATH directly
-            detailed_results_with_scores, final_report_path = orchestrator.run_control_chain(
-                document_path=request.target_path,
-                specified_meta_category=request.category
-            )
+        print(f"API: Saving uploaded file to: {save_path}")
+        # Read the file content asynchronously and write to the target path
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-        log_output = log_capture.getvalue().splitlines()
+        # Return the relative path to the saved file
+        relative_path = str(save_path)
+        print(f"API: File uploaded successfully to {relative_path}")
+        return UploadResponse(
+            success=True,
+            message="File uploaded successfully.",
+            file_path=relative_path, # Path relative to backend root
+            filename=safe_filename
+        )
+    except Exception as e:
+        print(f"API Error: Failed to save uploaded file {safe_filename}: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to save uploaded file. Error: {e}")
+    finally:
+        # Ensure the file descriptor is closed
+        await file.close()
 
+@app.post("/api/run-controls", response_model=ControlResponse)
+def run_controls_endpoint(request: ControlRequest):
+    # --- Security Check: Target Path --- #
+    # The target path could now be in TARGET_BASE_DIR or UPLOADS_DIR
+    print(f"API: Checking safety of target path: {request.target_path}")
+    if not (is_safe_path(TARGET_BASE_DIR, request.target_path) or is_safe_path(UPLOADS_DIR, request.target_path)):
+         print(f"API Security Alert: Attempt to access target outside allowed directories: {request.target_path}")
+         # Check if it simply doesn't exist yet
+         if not pathlib.Path(request.target_path).exists():
+              raise HTTPException(status_code=404, detail=f"Target path not found: {request.target_path}")
+         else:
+              raise HTTPException(status_code=403, detail="Access denied: Target path is invalid or outside allowed directories.")
+    # ------------------------------------ #
+
+    print(f"API: Received run request for target: {request.target_path}, Category: {request.category or 'Auto'}")
+    orchestrator = OrchestratorAgent()
+    detailed_results_with_scores: Optional[List[Dict[str, Any]]] = None
+    final_report_path: Optional[str] = None
+    api_logs = [] # Start with API-level logs
+
+    # --- Set up logging capture --- #
+    log_stream = io.StringIO()
+    root_logger = logging.getLogger()
+    log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    stream_handler = logging.StreamHandler(log_stream)
+    stream_handler.setFormatter(log_formatter)
+    stream_handler.setLevel(API_LOG_LEVEL)
+    original_level = root_logger.level
+    if root_logger.level > API_LOG_LEVEL:
+         root_logger.setLevel(API_LOG_LEVEL)
+    root_logger.addHandler(stream_handler)
+    api_logs.append(f"API: Log capture initialized at level {logging.getLevelName(API_LOG_LEVEL)}.")
+    # ------------------------------ #
+
+    try:
+        # --- Run the Orchestrator --- #
+        detailed_results_with_scores, final_report_path = orchestrator.run_control_chain(
+            document_path=request.target_path,
+            specified_meta_category=request.category
+        )
+        # ------------------------------ #
+        api_logs.append("API: Orchestrator chain finished.")
         # --- Determine Success (checks if detailed_results_with_scores is not None) ---
         if final_report_path and detailed_results_with_scores is not None:
             success = True
             message = "Control chain executed successfully."
-            print(f"API: Process finished. Orchestrator returned results (with scores) and report path: {final_report_path}")
+            print(f"API: Process finished. Orchestrator returned results and report path: {final_report_path}")
         elif final_report_path and detailed_results_with_scores is None:
              success = False
              message = "Control chain failed during execution, but a failure report was generated."
              print(f"API: Process failed (no results). Orchestrator returned failure report path: {final_report_path}")
         elif not final_report_path and detailed_results_with_scores is not None:
              success = True
-             message = "Control chain finished (results generated), but failed to get report path from orchestrator."
+             message = "Control chain finished (results generated), but failed to get report path."
              print("API Warning: Orchestrator returned results but no report path.")
         else:
             success = False
             message = "Control chain failed to produce results or a report."
             print("API Error: Orchestrator returned no results and no report path.")
-
         # --- Calculate Summary using Scores from Orchestrator (Synthesized Logic) ---
         total_controls = 0
         passed_controls = 0
@@ -350,197 +447,106 @@ def run_controls_endpoint(request: ControlRequest):
              summary_line = "Tests Passed: 0 out of 0"
 
         # --- Report Handling ---
-        report_to_return = None
+        report_to_return = final_report_path # Use the path returned by the orchestrator
+        if report_to_return:
+            print(f"API: Using report path provided by orchestrator: {report_to_return}")
+        else:
+            print("API Warning: No report path received from orchestrator.")
+            if success:
+                message += " (Report path unavailable)"
+            else:
+                 message += " (No report generated)"
 
-        # Use the directly returned final_report_path
-        # Modify report only if controls actually ran (detailed_results is not None)
-        if final_report_path and detailed_results_with_scores is not None:
-            try:
-                report_path_obj = pathlib.Path(final_report_path)
-                time.sleep(0.1) # Keep the small delay
-                is_file = report_path_obj.is_file()
-                if is_file:
-                     original_content = report_path_obj.read_text(encoding="utf-8")
-                     # ... (insertion point calculation) ...
-                     insertion_point = -1
-                     report_gen_marker = "Report Generated:"
-                     report_gen_line_pos = original_content.find(report_gen_marker)
-                     if report_gen_line_pos != -1:
-                          end_of_line_pos = original_content.find("\n", report_gen_line_pos)
-                          if end_of_line_pos != -1:
-                               insertion_point = end_of_line_pos + 1
-                          else:
-                               insertion_point = len(original_content)
-                     else:
-                          header_end_marker = "--- Control Automation Report ---"
-                          header_pos = original_content.find(header_end_marker)
-                          if header_pos != -1:
-                               double_newline_pos = original_content.find("\n\n", header_pos)
-                               if double_newline_pos != -1:
-                                    insertion_point = double_newline_pos + 2
-                     if insertion_point == -1:
-                          insertion_point = 0
-                     # ... (end insertion point calculation) ...
-                     summary_section = f"\n--- Summary ---\n{summary_line}\n"
-                     modified_content = original_content[:insertion_point] + summary_section + original_content[insertion_point:]
-                     report_path_obj.write_text(modified_content, encoding="utf-8")
-                     report_to_return = final_report_path
-                     log_output.append(f"Summary added to report: {final_report_path}")
-                else:
-                     print(f"API Warning: Report path '{final_report_path}' received, but file not found. Creating new report.")
-            except Exception as e:
-                print(f"API Error: Failed to read/modify existing report '{final_report_path}': {e}. Creating new report.")
+        # Add final status to API logs
+        api_logs.append(f"API: Processing complete. {message}")
 
-        # --- Fallback Report Creation ---
-        # Modify fallback to use detailed_results_with_scores for content AND consolidate
-        if not report_to_return and success:
-             print("API: Creating new consolidated report file with summary (fallback).")
-             new_report_filename = f"report_{datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
-             new_report_path = pathlib.Path(REPORTS_DIR) / new_report_filename
-             new_report_path.parent.mkdir(parents=True, exist_ok=True)
-             try:
-                 with open(new_report_path, "w", encoding="utf-8", newline='\n') as f:
-                     f.write("--- Control Automation Report ---\n\n")
-                     f.write(f"Original Document: {request.target_path}\n")
-                     f.write(f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                     f.write("\n--- Summary ---\n")
-                     f.write(f"{summary_line}\n") # Add summary
-                     f.write("\n--- Control Results (Consolidated) ---\n\n") # Updated title
-
-                     if not detailed_results_with_scores:
-                         f.write("No control results were generated.\n")
-                     else:
-                        # Group results by control ID to consolidate
-                        results_by_id: Dict[str, List[Dict[str, Any]]] = {}
-                        for item in detailed_results_with_scores:
-                            control_id = item.get('id', 'UnknownID')
-                            if control_id not in results_by_id:
-                                results_by_id[control_id] = []
-                            results_by_id[control_id].append(item)
-
-                        # Process each unique control ID
-                        for control_id, items in sorted(results_by_id.items()):
-                            # Find the item with the MAXIMUM valid score (>= 1)
-                            worst_item = None
-                            max_score = -1
-                            for item in items:
-                                score = item.get('score', -1)
-                                if isinstance(score, (int, float)):
-                                    current_score_for_max = score if score > 0 else 10
-                                    if current_score_for_max >= max_score:
-                                        if current_score_for_max > max_score or worst_item is None:
-                                            max_score = current_score_for_max
-                                            worst_item = item
-                                elif worst_item is None:
-                                     worst_item = item
-
-                            if worst_item is None and items:
-                                 worst_item = items[0]
-                                 max_score = worst_item.get('score', 'N/A')
-                            elif max_score == -1:
-                                 max_score = worst_item.get('score', 'N/A') if worst_item else 'N/A'
-                            elif max_score == 10 and worst_item and worst_item.get('score', 10) <= 0:
-                                 max_score = worst_item.get('score', 'Error')
-
-                            if worst_item:
-                                result_str = str(worst_item.get('result', ''))
-                                # Write the consolidated entry using the highest risk score
-                                f.write(f"Control ID: {control_id} (Global Risk Score: {max_score}/10)\n")
-                                f.write(f"Result: {result_str}\n")
-                                f.write("-" * 20 + "\n")
-
-                     f.write("\n--- End of Report ---\n")
-                 report_to_return = str(new_report_path)
-                 print(f"API: New report generated successfully at {report_to_return}")
-             except Exception as e:
-                  print(f"API Error: Failed to write new consolidated report: {e}")
-                  success = False
-                  message = f"Control chain finished, but failed to generate report. Error: {e}"
-        elif not report_to_return and not success and final_report_path:
-             report_to_return = final_report_path
-             print(f"API: Returning path to failure report: {report_to_return}")
-
-        # Add final status to logs
-        log_output.append(f"Processing complete. {message}")
+        # --- Retrieve captured logs --- #
+        captured_logs = log_stream.getvalue().splitlines()
+        # ---------------------------- #
 
         return ControlResponse(
             success=success,
             message=message,
-            report_path=report_to_return, # Use the determined path
-            logs=log_output,
-            summary=summary_line # <-- Include summary_line in the response
+            report_path=report_to_return,
+            logs=api_logs + captured_logs, # Combine API logs and captured agent logs
+            summary=summary_line
         )
 
     except FileNotFoundError as e:
         print(f"API Error: File not found - {e}")
+        api_logs.append(f"API ERROR: File not found - {e}") # Log error
         raise HTTPException(status_code=404, detail=f"Target path not found: {request.target_path}")
     except Exception as e:
         print(f"API Error: Failed to run control chain - {e}")
-        # Capture logs even if an error occurred during execution
-        log_output = log_capture.getvalue().splitlines()
-        # Include error details in the message
+        traceback.print_exc() # Print full traceback to server console
+        api_logs.append(f"API ERROR: Orchestration failed - {e}") # Log error
+        # Return captured logs even if an error occurred during execution
+        captured_logs = log_stream.getvalue().splitlines()
         error_message = f"Failed to run control chain: {e}"
-        # Return logs and error message
         return ControlResponse(
             success=False,
             message=error_message,
             report_path=None,
-            logs=log_output + [f"ERROR: {error_message}"], # Add error to logs
-            summary=None # <-- Include None for summary field
+            logs=api_logs + captured_logs + [f"ERROR: {error_message}"], # Add error to combined logs
+            summary=None
         )
-        # Alternatively, raise HTTPException for internal errors:
-        # raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+    finally:
+        # --- Clean up log handler --- #
+        root_logger.removeHandler(stream_handler)
+        # Restore original root logger level if we changed it
+        root_logger.setLevel(original_level)
+        log_stream.close()
+        print("API: Log handler removed.")
+        # ---------------------------- #
 
 @app.get("/api/prompt-details", response_model=FullPromptData)
 def get_prompt_details(file_path: str = Query(..., description="Relative path to the prompt JSON file")):
     """Gets the full content of a specific prompt JSON file."""
-    print(f"API: Received request for prompt details: {file_path}")
-
-    # Security Check: Ensure the requested path is within the PROMPTS_DIR
+    print(f"API: Request for details for prompt: {file_path}")
     if not is_safe_path(PROMPTS_DIR, file_path):
         print(f"API Security Alert: Attempt to access prompt outside PROMPTS_DIR: {file_path}")
         raise HTTPException(status_code=403, detail="Access denied: Prompt path is invalid or outside allowed directory.")
-
     try:
-        path_obj = pathlib.Path(file_path)
-        if not path_obj.is_file():
-             raise HTTPException(status_code=404, detail="Prompt file not found.")
-
-        with open(path_obj, 'r', encoding='utf-8') as f:
+        prompt_path_obj = pathlib.Path(file_path)
+        if not prompt_path_obj.is_file():
+             raise FileNotFoundError(f"Prompt file not found at expected path: {file_path}")
+        with open(prompt_path_obj, 'r', encoding='utf-8') as f:
             data = json.load(f)
-
-        # Populate the response model
+        required = ["control_id", "description", "meta_category", "prompt_instructions", "expected_output_format"]
+        if not all(key in data for key in required):
+             print(f"API Error: Prompt file {file_path} is missing required fields.")
+             raise ValueError("Prompt file is missing required fields.")
+        if not isinstance(data["prompt_instructions"], list):
+            raise ValueError("prompt_instructions must be a list.")
         full_data = FullPromptData(
-            control_id=data.get("control_id", path_obj.stem), # Use ID from file or filename stem
-            description=data.get("description", ""),
-            meta_category=data.get("meta_category", path_obj.parent.name), # Infer category from parent dir
-            prompt_instructions=data.get("prompt_instructions", []),
-            expected_output_format=data.get("expected_output_format", ""),
-            file_path=str(file_path) # Include the original file path
+            control_id=data["control_id"],
+            description=data["description"],
+            meta_category=data["meta_category"],
+            prompt_instructions=data["prompt_instructions"],
+            expected_output_format=data["expected_output_format"],
+            file_path=file_path
         )
-        print(f"API: Successfully read prompt details from {file_path}")
         return full_data
-    except json.JSONDecodeError:
-         print(f"API Error: Invalid JSON in prompt file {file_path}")
-         raise HTTPException(status_code=500, detail="Failed to parse prompt file (invalid JSON).")
-    except FileNotFoundError:
-         # Should be caught by is_safe_path or the explicit check, but handle defensively
-        print(f"API Error: Prompt file not found at {file_path}")
-        raise HTTPException(status_code=404, detail="Prompt file not found.")
+    except FileNotFoundError as e:
+         print(f"API Error: Prompt details - File not found: {e}")
+         raise HTTPException(status_code=404, detail=str(e))
+    except (json.JSONDecodeError, ValueError) as e:
+         print(f"API Error: Prompt details - Invalid format: {e}")
+         raise HTTPException(status_code=422, detail=f"Invalid prompt file format: {e}")
     except Exception as e:
-        print(f"API Error: Failed to read prompt details from {file_path}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to read prompt file.")
+        print(f"API Error: Failed to get prompt details for {file_path}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load prompt details.")
 
 @app.put("/api/update-prompt")
 def update_prompt(update_data: UpdatePromptRequest):
     """Updates an existing control prompt JSON file. Handles category changes (file move)."""
     original_file_path_str = update_data.file_path
-    print(f"API: Received request to update prompt: {original_file_path_str}")
+    print(f"API: Request to update prompt file: {original_file_path_str}")
 
     # Security Check: Ensure the original path is within the PROMPTS_DIR
     if not is_safe_path(PROMPTS_DIR, original_file_path_str):
         print(f"API Security Alert: Attempt to update prompt outside PROMPTS_DIR: {original_file_path_str}")
-        raise HTTPException(status_code=403, detail="Access denied: Original path is invalid.")
+        raise HTTPException(status_code=403, detail="Access denied: Original path is invalid or outside allowed directory.")
 
     original_path_obj = pathlib.Path(original_file_path_str)
     if not original_path_obj.is_file():
@@ -589,7 +595,34 @@ def update_prompt(update_data: UpdatePromptRequest):
     except Exception as e:
         print(f"API Error: Failed to update prompt file {original_file_path_str} -> {new_file_path}: {e}")
         # Attempt to clean up if write failed but old file was deleted? Unlikely path change scenario.
-# --- How to Run ---
-# Activate your .venv: source .venv/bin/activate
-# Run the server: uvicorn api_server:app --reload
-# The API will be available at http://127.0.0.1:8000
+
+@app.delete("/api/delete-prompt")
+def delete_prompt(file_path: str = Query(..., description="Relative path to the prompt JSON file to delete")):
+    """Deletes an existing control prompt JSON file."""
+    print(f"API: Request to delete prompt file: {file_path}")
+    if not is_safe_path(PROMPTS_DIR, file_path):
+        print(f"API Security Alert: Attempt to delete prompt outside PROMPTS_DIR: {file_path}")
+        raise HTTPException(status_code=403, detail="Access denied: Path is invalid or outside allowed directory.")
+    try:
+        prompt_path_obj = pathlib.Path(file_path)
+        if not prompt_path_obj.is_file():
+             raise FileNotFoundError(f"Prompt file not found: {file_path}")
+        prompt_path_obj.unlink()
+        print(f"API: Successfully deleted prompt file: {file_path}")
+        return {"message": "Prompt deleted successfully", "deleted_file_path": file_path}
+    except FileNotFoundError as e:
+         print(f"API Error: Delete prompt - File not found: {e}")
+         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"API Error: Failed to delete prompt {file_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete prompt file. {e}")
+
+# --- Run the server (for local development) ---
+if __name__ == "__main__":
+    import uvicorn
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", 8000))
+    # Setup basic logging for the server itself (will be overridden by orchestrator setup if run from here)
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s:     %(message)s')
+    print(f"Starting Control Automation API server on {host}:{port}")
+    uvicorn.run("api_server:app", host=host, port=port, reload=True)

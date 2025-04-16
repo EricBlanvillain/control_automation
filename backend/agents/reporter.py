@@ -158,16 +158,17 @@ class ReporterAgent:
                         else:
                             display_score_str = "Invalid"
 
-                        # Determine Pass/Fail status string for clarity
-                        status_str = "FAIL"
+                        # Determine Pass/Fail status and emoji for report line
+                        status_emoji = "❌"
                         if isinstance(score, (int, float)) and 1 <= score < PASS_SCORE_THRESHOLD:
-                             status_str = "PASS"
+                             status_emoji = "✅"
 
                         result_str = str(worst_item.get('result', ''))
                         description_str = worst_item.get('description', 'N/A')
 
-                        f.write(f"\nControl ID: {control_id}\n")
-                        f.write(f"Status: {status_str} (Score: {display_score_str})\n")
+                        # Prepend emoji to Control ID line
+                        f.write(f"\n{status_emoji} Control ID: {control_id}\n")
+                        f.write(f"Global Risk Score: {display_score_str}\n") # New line
                         f.write(f"Description: {description_str}\n")
                         f.write(f"Result (from highest risk instance):\n{result_str}\n")
                         f.write("-" * 30 + "\n") # Slightly longer separator

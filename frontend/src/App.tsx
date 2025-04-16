@@ -74,6 +74,15 @@ function App() {
   const [isUpdatingPrompt, setIsUpdatingPrompt] = useState(false);
   const [isDeletingPrompt, setIsDeletingPrompt] = useState<string | null>(null); // Store path of prompt being deleted
 
+  // --- State for File Upload --- //
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null); // Path returned from backend
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // ----------------------------- //
+
   const logsEndRef = useRef<HTMLDivElement>(null); // Ref for scrolling logs
 
   // Fetch available targets on component mount
@@ -118,6 +127,53 @@ function App() {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [...prev, `${timestamp}: ${message}`]);
   }, []);
+
+  // --- File Upload Handler --- //
+  const handleFileUpload = async (file: File | null) => {
+    if (!file) return;
+
+    setUploadedFile(file);
+    setUploadedFilePath(null); // Clear previous path
+    setUploadError(null);
+    setIsUploading(true);
+    addLog(`Uploading file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await axios.post<{ success: boolean; message: string; file_path?: string; filename?: string }>(`${API_URL}/api/upload-document`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        if (response.data.success && response.data.file_path) {
+            addLog(`File uploaded successfully. Path: ${response.data.file_path}`);
+            setUploadedFilePath(response.data.file_path);
+            // --- CRITICAL: Set the targetPath to the uploaded file's path --- //
+            setTargetPath(response.data.file_path);
+            // ------------------------------------------------------------- //
+            setError(null); // Clear main error if upload succeeds
+        } else {
+            throw new Error(response.data.message || "Upload failed, path not returned.");
+        }
+    } catch (err: any) {
+        console.error('Error uploading file:', err);
+        let message = 'An unknown error occurred during upload.';
+        if (axios.isAxiosError(err)) {
+            if (err.response) { message = `Upload Error (${err.response.status}): ${err.response.data?.detail || err.message}`; }
+            else if (err.request) { message = 'No response received from backend server.'; }
+            else { message = `Request setup error: ${err.message}`; }
+        } else if (err instanceof Error) { message = err.message; }
+        setUploadError(`Upload failed: ${message}`);
+        addLog(`Error uploading ${file.name}: ${message}`);
+        setUploadedFile(null); // Clear file on error
+    } finally {
+        setIsUploading(false);
+    }
+};
+// -------------------------- //
 
   // Handle running the control process
   const handleRunControls = async () => {
@@ -492,6 +548,63 @@ function App() {
           )}
         </div>
 
+        {/* --- File Upload Section --- */}
+        <div className="control-group">
+          <label>Or Upload Document:</label>
+          <div
+            className={`drop-zone ${dragActive ? 'drop-zone-active' : ''}`}
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); /* Required to allow drop */ }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragActive(false);
+              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleFileUpload(e.dataTransfer.files[0]);
+              }
+            }}
+            onClick={() => fileInputRef.current?.click()} // Trigger hidden file input
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              style={{ display: 'none' }} // Hide the actual input
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleFileUpload(e.target.files[0]);
+                }
+              }}
+              accept=".txt,.pdf,.docx,.xlsx" // Specify acceptable file types
+            />
+            {isUploading ? (
+              <p>Uploading...</p>
+            ) : uploadedFile ? (
+              <p>Selected: {uploadedFile.name}</p>
+            ) : (
+              <p>Drag 'n' drop file here, or click to select</p>
+            )}
+          </div>
+          {uploadedFilePath && (
+            <div className="upload-info">
+              <span>Using uploaded file: <code>{uploadedFilePath}</code></span>
+              <button
+                className="clear-upload-button"
+                onClick={() => {
+                  setUploadedFile(null);
+                  setUploadedFilePath(null);
+                  setTargetPath(''); // Clear target path
+                  setUploadError(null);
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+          {uploadError && <p className="error-message upload-error-text">{uploadError}</p>}
+        </div>
+        {/* ------------------------- */}
+
         <div className="control-group">
           <label htmlFor="category">Control Category (Optional):</label>
           <select
@@ -513,8 +626,8 @@ function App() {
             disabled={isLoading || !targetPath}
             className="run-button"
           >
-            {isLoading ? 'Processing' : 'Run Controls'}
             {isLoading && <span className="spinner"></span>}
+            {isLoading ? 'Processing' : 'Run Controls'}
           </button>
         </div>
       </div>
