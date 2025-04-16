@@ -507,9 +507,16 @@ function App() {
           </select>
         </div>
 
-        <button className="run-button" onClick={handleRunControls} disabled={isLoading || !targetPath}>
-          {isLoading ? 'Processing...' : 'Run Controls'}
-        </button>
+        <div className="control-group">
+          <button
+            onClick={handleRunControls}
+            disabled={isLoading || !targetPath}
+            className="run-button"
+          >
+            {isLoading ? 'Processing' : 'Run Controls'}
+            {isLoading && <span className="spinner"></span>}
+          </button>
+        </div>
       </div>
 
       {error &&

@@ -305,30 +305,46 @@ def run_controls_endpoint(request: ControlRequest):
             message = "Control chain failed to produce results or a report."
             print("API Error: Orchestrator returned no results and no report path.")
 
-        # --- Calculate Summary using Scores from Orchestrator ---
+        # --- Calculate Summary using Scores from Orchestrator (Synthesized Logic) ---
         total_controls = 0
         passed_controls = 0
-        summary_line = "Tests Passed: N/A" # Default
+        summary_line = "Tests Passed: N/A"
 
         if detailed_results_with_scores:
-            total_controls = len(detailed_results_with_scores)
-            print(f"API: Calculating summary from {total_controls} scored results...")
+            # Group results by control ID
+            results_by_id: Dict[str, List[Dict[str, Any]]] = {}
             for item in detailed_results_with_scores:
                 control_id = item.get('id', 'UnknownID')
-                # Score should now exist in the item dictionary
-                score = item.get('score', -1) # Get score, default to -1 if missing
+                if control_id not in results_by_id:
+                    results_by_id[control_id] = []
+                results_by_id[control_id].append(item)
 
-                print(f"API Summary: Control={control_id}, Score={score}")
+            total_controls = len(results_by_id) # Total unique controls
+            print(f"API: Calculating summary for {total_controls} unique controls...")
 
-                # Apply threshold (Score < 5 passes, including valid scores 1-4)
-                # Treat score -1 (grading error) as fail.
-                if 1 <= score < 5:
+            # Determine pass/fail for each unique control
+            for control_id, items in results_by_id.items():
+                # Find the MINIMUM valid score achieved for this control across all chunks
+                # Treat scores <= 0 (like -1 for grading errors) as max risk (10) when finding min
+                valid_scores = [item.get('score', 10) for item in items if isinstance(item.get('score'), int)]
+                scores_for_min = [s if s > 0 else 10 for s in valid_scores]
+                min_score = min(scores_for_min) if scores_for_min else 10 # Default to 10 (fail) if no valid scores
+
+                # Find the Maximum score as well, for reporting purposes (though report logic also does this)
+                scores_for_max = [s if s > 0 else 10 for s in valid_scores]
+                max_score = max(scores_for_max) if scores_for_max else 10
+
+                print(f"API Summary: Control={control_id}, Min Score={min_score}, Max Score={max_score}")
+
+                # Apply threshold TO MIN SCORE: Pass if the BEST score achieved was < 5
+                if 1 <= min_score < 5:
                     passed_controls += 1
-                # else: # Implicitly failed if score >= 5 or score == -1
-                #     print(f"API Summary: Control {control_id} failed (score={score})")
+                    print(f"API Summary: Control {control_id} PASSED (based on min score)")
+                else:
+                    print(f"API Summary: Control {control_id} FAILED (based on min score)")
 
             summary_line = f"Tests Passed: {passed_controls} out of {total_controls}"
-            print(f"API Summary: Final count -> Passed: {passed_controls}/{total_controls}")
+            print(f"API Summary: Final count -> Passed: {passed_controls}/{total_controls} unique controls")
         else:
              print("API Warning: No scored results returned from orchestrator to calculate summary.")
              summary_line = "Tests Passed: 0 out of 0"
@@ -376,34 +392,68 @@ def run_controls_endpoint(request: ControlRequest):
                 print(f"API Error: Failed to read/modify existing report '{final_report_path}': {e}. Creating new report.")
 
         # --- Fallback Report Creation ---
-        # Modify fallback to use detailed_results_with_scores for content
+        # Modify fallback to use detailed_results_with_scores for content AND consolidate
         if not report_to_return and success:
-             print("API: Creating new report file with summary (fallback).")
+             print("API: Creating new consolidated report file with summary (fallback).")
              new_report_filename = f"report_{datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
              new_report_path = pathlib.Path(REPORTS_DIR) / new_report_filename
              new_report_path.parent.mkdir(parents=True, exist_ok=True)
              try:
-                 with open(new_report_path, "w", encoding="utf-8") as f:
+                 with open(new_report_path, "w", encoding="utf-8", newline='\n') as f:
                      f.write("--- Control Automation Report ---\n\n")
                      f.write(f"Original Document: {request.target_path}\n")
                      f.write(f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                      f.write("\n--- Summary ---\n")
                      f.write(f"{summary_line}\n") # Add summary
-                     f.write("\n--- Control Results ---\n\n")
-                     if detailed_results_with_scores:
-                         for item in detailed_results_with_scores:
-                             # Update format to match ReporterAgent
-                             score_display = item.get('score', 'N/A')
-                             f.write(f"Control ID: {item.get('id', 'UnknownID')} (Risk Score: {score_display}/10)\n")
-                             f.write(f"Result: {item.get('result', '')}\n")
-                             f.write("-" * 20 + "\n")
-                     else:
+                     f.write("\n--- Control Results (Consolidated) ---\n\n") # Updated title
+
+                     if not detailed_results_with_scores:
                          f.write("No control results were generated.\n")
+                     else:
+                        # Group results by control ID to consolidate
+                        results_by_id: Dict[str, List[Dict[str, Any]]] = {}
+                        for item in detailed_results_with_scores:
+                            control_id = item.get('id', 'UnknownID')
+                            if control_id not in results_by_id:
+                                results_by_id[control_id] = []
+                            results_by_id[control_id].append(item)
+
+                        # Process each unique control ID
+                        for control_id, items in sorted(results_by_id.items()):
+                            # Find the item with the MAXIMUM valid score (>= 1)
+                            worst_item = None
+                            max_score = -1
+                            for item in items:
+                                score = item.get('score', -1)
+                                if isinstance(score, (int, float)):
+                                    current_score_for_max = score if score > 0 else 10
+                                    if current_score_for_max >= max_score:
+                                        if current_score_for_max > max_score or worst_item is None:
+                                            max_score = current_score_for_max
+                                            worst_item = item
+                                elif worst_item is None:
+                                     worst_item = item
+
+                            if worst_item is None and items:
+                                 worst_item = items[0]
+                                 max_score = worst_item.get('score', 'N/A')
+                            elif max_score == -1:
+                                 max_score = worst_item.get('score', 'N/A') if worst_item else 'N/A'
+                            elif max_score == 10 and worst_item and worst_item.get('score', 10) <= 0:
+                                 max_score = worst_item.get('score', 'Error')
+
+                            if worst_item:
+                                result_str = str(worst_item.get('result', ''))
+                                # Write the consolidated entry using the highest risk score
+                                f.write(f"Control ID: {control_id} (Global Risk Score: {max_score}/10)\n")
+                                f.write(f"Result: {result_str}\n")
+                                f.write("-" * 20 + "\n")
+
                      f.write("\n--- End of Report ---\n")
                  report_to_return = str(new_report_path)
                  print(f"API: New report generated successfully at {report_to_return}")
              except Exception as e:
-                  print(f"API Error: Failed to write new fallback report: {e}")
+                  print(f"API Error: Failed to write new consolidated report: {e}")
                   success = False
                   message = f"Control chain finished, but failed to generate report. Error: {e}"
         elif not report_to_return and not success and final_report_path:

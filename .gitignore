@@ -21,3 +21,13 @@ reports/
 # IDE specific
 .vscode/
 .idea/
+
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+
+# Coverage
+coverage/
+
+# DS_Store
+.DS_Store
