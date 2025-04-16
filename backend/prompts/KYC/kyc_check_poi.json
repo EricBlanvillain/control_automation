@@ -1,0 +1,19 @@
+{
+  "control_id": "KYC_002",
+  "description": "Verify presence and validity of Proof of Identity (POI) document details.",
+  "meta_category": "KYC",
+  "prompt_instructions": [
+    "Scan the document text provided below.",
+    "Look for details consistent with a proof of identity document (e.g., Passport, National ID Card, Driver's License).",
+    "Identify the type of document if possible.",
+    "Extract the full name, date of birth (DOB), and document expiry date if present.",
+    "Check if the expiry date is in the future compared to the current date (assume today is 2024-07-26).",
+    "Format the output as JSON: { \"poi_type\": \"<type>\", \"name\": \"<full_name>\", \"dob\": \"<dob>\", \"expiry_date\": \"<expiry>\", \"is_valid\": <true/false>, \"status\": \"<Found/NotFound/Expired/DataMissing>\" }.",
+    "If no POI is found, respond with { \"status\": \"NotFound\" }.",
+    "If POI is found but key data is missing, set status to 'DataMissing'.",
+    "If POI is found and expired, set is_valid to false and status to 'Expired'.",
+    "If POI is found and valid, set is_valid to true and status to 'Found'.",
+    "Respond ONLY with the JSON output."
+  ],
+  "expected_output_format": "JSON Object"
+}

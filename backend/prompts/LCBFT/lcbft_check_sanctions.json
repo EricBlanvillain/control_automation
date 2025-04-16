@@ -1,0 +1,16 @@
+{
+  "control_id": "LCBFT_002",
+  "description": "Check if sender or recipient names appear on a watchlist.",
+  "meta_category": "LCBFT",
+  "prompt_instructions": [
+    "Scan the transaction details provided below.",
+    "Extract the Sender Name and the Recipient Name.",
+    "Assume the following names are on a watchlist: \"Mr. McGregor\", \"Lord Voldemort\".",
+    "Check if either the Sender Name OR the Recipient Name exactly matches a name on the watchlist.",
+    "Respond with 'Watchlist Hit: Yes (Name: <Matched Name>)' if a match is found.",
+    "Respond with 'Watchlist Hit: No' if neither name is on the watchlist.",
+    "If names cannot be extracted, respond with 'Error: Names not found'.",
+    "Respond ONLY with the finding."
+  ],
+  "expected_output_format": "String"
+}

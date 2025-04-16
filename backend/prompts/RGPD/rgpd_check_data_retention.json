@@ -1,0 +1,16 @@
+{
+  "control_id": "RGPD_002",
+  "description": "Extract the stated data retention period for specific data types.",
+  "meta_category": "RGPD",
+  "prompt_instructions": [
+    "Read the privacy policy text provided below.",
+    "Locate the section discussing data retention.",
+    "Identify the retention period mentioned for user account data.",
+    "Identify the retention period mentioned for user activity data (like preferences, interactions, etc.).",
+    "If a specific period (e.g., '2 years', 'until deletion request', 'indefinitely') is mentioned for each, extract it.",
+    "Format the output as JSON: { \"account_data_retention\": \"<period>\", \"activity_data_retention\": \"<period>\" }.",
+    "If a retention period for a specific type is not found, use 'Not Stated' as the value.",
+    "Respond ONLY with the JSON output."
+  ],
+  "expected_output_format": "JSON Object"
+}

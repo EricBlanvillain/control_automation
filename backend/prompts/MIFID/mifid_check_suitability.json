@@ -1,0 +1,13 @@
+{
+  "control_id": "MIFID_002",
+  "description": "Check if a suitability assessment is mentioned.",
+  "meta_category": "MIFID",
+  "prompt_instructions": [
+    "Analyze the investment proposal text provided below.",
+    "Look for statements indicating that a suitability assessment or report has been performed or is referenced (e.g., 'Based on your profile', 'suitability report', 'aligned with your objectives').",
+    "Respond with 'Suitability Mentioned: Yes' if such statements are found.",
+    "Respond with 'Suitability Mentioned: No' if no such statements are found.",
+    "Respond ONLY with the finding."
+  ],
+  "expected_output_format": "String"
+}

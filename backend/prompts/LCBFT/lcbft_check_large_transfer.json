@@ -1,0 +1,16 @@
+{
+  "control_id": "LCBFT_003",
+  "description": "Check if transfer amount exceeds a defined threshold.",
+  "meta_category": "LCBFT",
+  "prompt_instructions": [
+    "Analyze the transfer alert details provided below.",
+    "Extract the numeric transfer amount.",
+    "Assume the threshold for large transfers is 100,000 (in any currency mentioned).",
+    "Compare the extracted amount to the threshold.",
+    "Respond with 'Amount Above Threshold: Yes (Amount: <amount>)' if the amount exceeds the threshold.",
+    "Respond with 'Amount Above Threshold: No (Amount: <amount>)' if the amount does not exceed the threshold.",
+    "If the amount cannot be extracted, respond with 'Error: Amount not found'.",
+    "Respond ONLY with the finding."
+  ],
+  "expected_output_format": "String"
+}

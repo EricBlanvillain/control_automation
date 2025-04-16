@@ -1,0 +1,13 @@
+{
+  "control_id": "RGPD_001",
+  "description": "Check for explicit consent collection statement.",
+  "meta_category": "RGPD",
+  "prompt_instructions": [
+    "Analyze the provided text for clauses related to data processing consent.",
+    "Identify specific sentences where the user explicitly agrees or consents to the processing of their personal data (e.g., 'I consent to...', 'I agree to the processing...', ticking a checkbox description).",
+    "If one or more explicit consent statements are found, respond with 'Consent Statement Found' followed by the exact quote(s) of the statement(s).",
+    "If no explicit consent statement is found, respond with 'Consent Statement Not Found'.",
+    "Respond ONLY with the finding and quote(s) if applicable."
+  ],
+  "expected_output_format": "String"
+}

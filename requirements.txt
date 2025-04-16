@@ -1,0 +1,29 @@
+# Core Agno framework
+agno
+
+# LLM Providers (Add based on usage in controller.py)
+openai
+anthropic
+
+# Document Processing
+python-docx # For .docx files
+openpyxl    # For .xlsx files
+
+# PDF Processing & OCR (Add if implementing PDF/OCR in extractor.py)
+# PyMuPDF     # For PDF text/image extraction
+# pytesseract # For OCR (requires tesseract installation)
+# Pillow      # Image handling for OCR
+
+# Backend API Server
+fastapi
+uvicorn[standard] # ASGI server with standard optimizations
+
+# Environment Variables
+python-dotenv # To load .env file
+
+# Other potential dependencies (Add if needed)
+# sqlalchemy # If using SqliteStorage, SqliteMemoryDb etc.
+# lancedb    # If using LanceDb vector store
+# duckduckgo-search # If using DuckDuckGoTools
+# yfinance   # If using YFinanceTools
+# requests   # For potential API calls (e.g., custom OCR)

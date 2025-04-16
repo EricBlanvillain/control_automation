@@ -1,0 +1,13 @@
+{
+  "control_id": "KYC_003",
+  "description": "Extract key business details from onboarding form.",
+  "meta_category": "KYC",
+  "prompt_instructions": [
+    "Scan the business account application text provided below.",
+    "Extract the following details: Company Name, Registration Number, Registered Address.",
+    "Format the output as JSON: { \"company_name\": \"<name>\", \"registration_number\": \"<number>\", \"registered_address\": \"<address>\" }.",
+    "If any detail is not found, use null as the value for that key.",
+    "Respond ONLY with the JSON object."
+  ],
+  "expected_output_format": "JSON Object"
+}

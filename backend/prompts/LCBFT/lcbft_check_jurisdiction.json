@@ -1,0 +1,16 @@
+{
+  "control_id": "LCBFT_001",
+  "description": "Check if transaction involves high-risk jurisdictions.",
+  "meta_category": "LCBFT",
+  "prompt_instructions": [
+    "Analyze the transaction details provided below.",
+    "Extract the originating country code (e.g., GB) and the destination country code (e.g., DO).",
+    "Assume the following countries are currently considered high-risk: North Korea (KP), Iran (IR), Dominican Republic (DO).",
+    "Check if either the originating country OR the destination country is in the high-risk list.",
+    "Respond with 'High-Risk Jurisdiction Involved: Yes (Country: <CODE>)' if a high-risk country is found, specifying the first high-risk country code found.",
+    "Respond with 'High-Risk Jurisdiction Involved: No' if neither country is on the high-risk list.",
+    "If country codes cannot be extracted, respond with 'Error: Country codes not found'.",
+    "Respond ONLY with the finding."
+  ],
+  "expected_output_format": "String"
+}

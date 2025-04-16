@@ -1,0 +1,13 @@
+{
+  "control_id": "KYC_001",
+  "description": "Verify presence of Proof of Address (POA) document type.",
+  "meta_category": "KYC",
+  "prompt_instructions": [
+    "Scan the document text provided below.",
+    "Identify if any common proof of address documents are mentioned or described (e.g., utility bill, bank statement, driver's license with address, government-issued letter).",
+    "If found, state 'POA Found' and list the type(s) identified.",
+    "If not found, state 'POA Not Found'.",
+    "Respond ONLY with the finding (e.g., 'POA Found: Utility Bill' or 'POA Not Found')."
+  ],
+  "expected_output_format": "String (e.g., 'POA Found: Utility Bill')"
+}

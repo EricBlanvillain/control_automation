@@ -1,0 +1,17 @@
+CUSTOMER ONBOARDING FORM
+
+Applicant Name: Peter Rabbit
+Date of Birth: 09-APR-1902
+Address: Under the big fir tree, Hill Top Farm, Near Sawrey, Cumbria, UK
+Contact Email: peter.rabbit@beatrixpotter.lit
+
+Identification Document Provided:
+Type: Driver's License (Lettuce Patch Permit)
+Number: LP-1893-PR
+Expiry Date: 01-JAN-2025
+
+Employment: Gardener (Self-Employed)
+Source of Funds: Vegetable Sales
+
+Declaration: I confirm the details are true and I am not Mr. McGregor.
+Signature: P. Rabbit

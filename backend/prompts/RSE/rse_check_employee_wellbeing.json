@@ -1,0 +1,14 @@
+{
+  "control_id": "RSE_002",
+  "description": "Check for mentions of employee wellbeing initiatives.",
+  "meta_category": "RSE",
+  "prompt_instructions": [
+    "Analyze the CSR report excerpt text provided below, focusing on the Social Responsibility section.",
+    "Identify specific initiatives or programs mentioned related to employee wellbeing, health, or support (e.g., 'mental health support', 'flexible working', 'Healthy Habitat initiative').",
+    "List the specific initiatives found.",
+    "Respond with 'Wellbeing Initiatives Found: Yes (Initiatives: <List of initiatives found, separated by comma>)' if initiatives are mentioned.",
+    "Respond with 'Wellbeing Initiatives Found: No' if no specific initiatives are mentioned.",
+    "Respond ONLY with the finding."
+  ],
+  "expected_output_format": "String"
+}

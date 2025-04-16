@@ -1,0 +1,18 @@
+BUSINESS ACCOUNT APPLICATION
+
+Company Name: Acme Corporation
+Registration Number: ACME-1949
+Registered Address: 1 Coyote Way, Desert Gulch, AZ 85001, USA
+Business Type: Explosives & Gadgetry Manufacturing
+Website: www.acme.example.com
+
+Primary Contact:
+Wile E. Coyote
+Title: Chief Procurement Officer
+Email: wile.e@acme.example.com
+
+Beneficial Owners (Holding >25%):
+- Road Runner (Status: Uncatchable)
+
+Source of Funds: Sales of gadgets, anvils, rocket skates.
+Anticipated Activity: Large international payments for exotic materials.

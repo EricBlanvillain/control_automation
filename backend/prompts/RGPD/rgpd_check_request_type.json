@@ -1,0 +1,15 @@
+{
+  "control_id": "RGPD_003",
+  "description": "Identify the type of GDPR rights request being made.",
+  "meta_category": "RGPD",
+  "prompt_instructions": [
+    "Read the data subject request text provided below.",
+    "Determine the primary right being exercised based on keywords like 'request access', 'request deletion', 'request erasure', 'request rectification', 'request correction', 'request restriction', 'object to processing'.",
+    "Identify the main subject of the request (e.g., Access, Deletion, Rectification, Objection, Restriction).",
+    "Respond with 'Request Type Identified: <Type>' (e.g., 'Request Type Identified: Access').",
+    "If the type is unclear or multiple types are requested, respond with 'Request Type Identified: Unclear/Multiple'.",
+    "If no clear request is found, respond with 'Request Type Identified: None'.",
+    "Respond ONLY with the finding."
+  ],
+  "expected_output_format": "String"
+}

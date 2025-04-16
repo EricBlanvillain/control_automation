@@ -1,0 +1,19 @@
+ALERT: LARGE INTERNAL TRANSFER
+
+Alert ID: INT-ALERT-001
+Date: 2024-07-28
+
+Originating Account: OPS-EXPENSE-ACCT (Operations General)
+Destination Account: UNKNOWN-BENEF-ACCT (Beneficiary Unverified)
+
+Amount: 500,000 GBP
+
+Initiator: Employee ID 734 (No previous large transaction history)
+Justification Provided: "Special Project Funding - Expedited"
+
+Risk Flags:
+- Amount exceeds threshold (100,000 GBP)
+- Destination account lacks verification
+- Vague justification
+
+Action Required: Investigate justification, verify destination account holder before release.

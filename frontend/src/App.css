@@ -1,0 +1,361 @@
+/* Define CSS Variables for easier theming */
+:root {
+  --background-color: #1f2937; /* Dark blue-gray */
+  --card-background-color: #374151; /* Medium gray */
+  --input-background-color: #4b5563; /* Lighter gray */
+  --text-color: #f3f4f6; /* Light gray text */
+  --primary-color: #3b82f6; /* Vibrant blue */
+  --primary-hover-color: #2563eb;
+  --border-color: #4b5563;
+  --error-color: #ef4444; /* Red */
+  --error-background-color: rgba(239, 68, 68, 0.1);
+  --success-color: #22c55e; /* Green */
+  --log-background-color: #111827; /* Very dark gray */
+  --font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* Apply base styles */
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  display: flex;
+  justify-content: center; /* Center content horizontally */
+  align-items: flex-start; /* Align to top */
+  min-height: 100vh;
+  padding: 2rem 0; /* Add some top/bottom padding */
+}
+
+#root {
+  width: 100%;
+  max-width: 900px; /* Limit max width */
+  margin: 0 auto;
+}
+
+#App {
+  width: 100%;
+  padding: 1rem; /* Reduced padding */
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Space between main sections */
+}
+
+/* General Card Styling */
+.card {
+  background-color: var(--card-background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: left;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+/* Input and Controls Section */
+.input-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-weight: 600; /* Slightly bolder */
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+.control-group input[type="text"],
+.control-group select {
+  width: 100%;
+  padding: 0.75em 1em;
+  font-size: 1em;
+  font-family: inherit;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-background-color);
+  color: var(--text-color);
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.control-group input[type="text"]:focus,
+.control-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Main Action Button */
+.run-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.8em 1.5em;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+  align-self: center; /* Center button within its container */
+}
+
+.run-button:hover {
+  background-color: var(--primary-hover-color);
+}
+
+.run-button:disabled {
+  background-color: #555;
+  border-color: #666;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+/* Logs Section */
+.logs-section pre {
+  background-color: var(--log-background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: monospace;
+  font-size: 0.9em;
+  margin: 0;
+  color: #d1d5db; /* Lighter gray for logs */
+}
+
+/* Results Section */
+.results-section code {
+  background-color: var(--log-background-color);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: monospace;
+  color: var(--success-color);
+}
+
+.results-section p a {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.results-section .view-report-button {
+  background-color: var(--input-background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 0.5em 1em;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 0.5rem; /* Add some space above */
+  margin-bottom: 1rem; /* Add space below */
+}
+
+.results-section .view-report-button:hover {
+  background-color: #555;
+}
+
+.results-section .view-report-button:disabled {
+  background-color: #444;
+  border-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Specific styling for report content display */
+.report-content {
+  margin-top: 1rem; /* Add space above the content */
+}
+
+.report-content h3 {
+  margin-bottom: 0.5rem; /* Add space below the heading */
+  color: var(--text-color); /* Ensure heading color is visible */
+  font-size: 1.1em;
+}
+
+.report-content pre {
+  background-color: var(--log-background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  /* max-height: none; */ /* Removed max-height for report content */
+  overflow-y: auto; /* Add scrollbar if content is very long */
+  white-space: pre-wrap;  /* <<< Key property for preserving newlines and wrapping */
+  word-wrap: break-word;  /* <<< Key property for breaking long lines */
+  font-family: monospace;
+  font-size: 0.9em;
+  margin: 0;
+  color: #d1d5db;
+  text-align: left;
+}
+
+/* Error Message Styling */
+.error-message {
+  color: var(--error-color);
+  background-color: var(--error-background-color);
+  border: 1px solid var(--error-color);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+/* --- Prompts Section Styling --- */
+.prompts-section {
+  /* No longer disabled/dimmed */
+}
+
+.prompt-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem; /* Space below buttons */
+}
+
+.prompt-actions button {
+  /* Basic button styling - can customize further */
+  background-color: var(--input-background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 0.6em 1.2em;
+  border-radius: 6px;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.prompt-actions button:hover {
+  background-color: #555;
+}
+
+.prompt-actions button:disabled {
+  background-color: #444;
+  border-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Style for prompt-specific errors */
+.prompt-error {
+  margin-bottom: 1.5rem;
+}
+
+/* Existing Prompts List */
+.existing-prompts-list {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.prompt-category {
+  margin-bottom: 1.5rem;
+}
+
+.prompt-category h3 {
+  margin-bottom: 0.75rem;
+  color: var(--primary-color); /* Use accent color for category */
+  font-size: 1.2em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3rem;
+}
+
+.prompt-category ul {
+  list-style: none;
+  padding-left: 1rem;
+  margin: 0;
+}
+
+.prompt-category li {
+  margin-bottom: 0.5rem;
+  font-size: 0.95em;
+}
+
+.prompt-category li code {
+    font-size: 0.9em;
+}
+
+.prompt-category li i {
+  color: #9ca3af; /* Lighter color for file path */
+  font-size: 0.9em;
+  margin-left: 0.5rem;
+}
+
+/* Create Prompt Form */
+.create-prompt-form {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem; /* Space between form groups */
+}
+
+.create-prompt-form h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.2em;
+}
+
+.create-prompt-form .control-group {
+    gap: 0.3rem; /* Reduce gap within form control group */
+}
+
+.create-prompt-form textarea {
+  width: 100%;
+  padding: 0.75em 1em;
+  font-size: 1em;
+  font-family: inherit;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-background-color);
+  color: var(--text-color);
+  box-sizing: border-box;
+  resize: vertical; /* Allow vertical resize */
+  min-height: 80px;
+}
+
+.create-prompt-form textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.save-prompt-button {
+  /* Reuse run-button styles */
+  background-color: var(--success-color); /* Green for save */
+  color: white;
+  border: none;
+  padding: 0.8em 1.5em;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+  align-self: center;
+}
+
+.save-prompt-button:hover {
+  background-color: #16a34a; /* Darker green */
+}
+
+.save-prompt-button:disabled {
+  background-color: #555;
+  border-color: #666;
+  color: #aaa;
+  cursor: not-allowed;
+}

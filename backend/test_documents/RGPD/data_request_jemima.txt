@@ -1,0 +1,17 @@
+Subject: Formal Request for Personal Data Access
+
+To Whom It May Concern,
+
+Pursuant to Article 15 of the General Data Protection Regulation (GDPR), I hereby request access to any and all personal data concerning me, Jemima Puddle-Duck, that you process.
+
+Please provide information on:
+- The categories of personal data concerned.
+- The recipients or categories of recipient to whom the personal data have been or will be disclosed.
+- The envisaged period for which the personal data will be stored.
+- The existence of the right to request rectification or erasure of personal data.
+
+Please provide this information in a commonly used electronic format within one month of receipt of this request.
+
+Sincerely,
+Jemima Puddle-Duck
+jemima.pd@farmmail.example.com

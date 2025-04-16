@@ -1,0 +1,18 @@
+INTERNATIONAL FUNDS TRANSFER RECORD
+
+Transaction ID: TX-2024-98765
+Date: 2024-07-26
+
+Sender Information:
+Name: Mr. McGregor
+Account: GBN-12345678
+Originating Country: United Kingdom (GB)
+
+Recipient Information:
+Name: El Conejo Malo
+Account: DOM-98765432
+Destination Country: Dominican Republic (DO)
+
+Amount: 100 GBP
+Purpose: Purchase of cabbage seeds
+Notes: Sender flagged as high-risk due to previous interactions with rabbits.

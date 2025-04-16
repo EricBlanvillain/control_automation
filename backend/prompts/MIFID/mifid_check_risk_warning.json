@@ -1,0 +1,13 @@
+{
+  "control_id": "MIFID_001",
+  "description": "Check for presence of standard investment risk warnings.",
+  "meta_category": "MIFID",
+  "prompt_instructions": [
+    "Scan the investment proposal text provided below.",
+    "Look for explicit statements warning about the risk of losing capital, such as 'investment value can go down as well as up', 'capital is at risk', 'past performance is not indicative of future results'.",
+    "If one or more standard risk warnings are found, respond with 'Risk Warning Found: Yes'.",
+    "If no standard risk warnings are found, respond with 'Risk Warning Found: No'.",
+    "Respond ONLY with the finding."
+  ],
+  "expected_output_format": "String"
+}
