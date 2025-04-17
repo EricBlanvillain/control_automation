@@ -18,6 +18,7 @@ dist/
 # Reports (optional, if you don't want to commit them)
 reports/
 uploads/
+.chroma_data/ # Ignore ChromaDB persistent data
 
 # IDE specific
 .vscode/
