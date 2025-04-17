@@ -45,3 +45,6 @@ Thumbs.db
 *.log
 *.tmp
 *.swp
+
+# Documents (e.g., test files, examples)
+*.pdf
