@@ -8,7 +8,7 @@
     "Identify any reported challenges or negative impacts (e.g., 'Scope 3 emissions... saw a slight increase').",
     "Summarize the key positive actions and any negative impacts/challenges found.",
     "Format the output as JSON: { \"positive_actions\": [\"Action 1...\", \"Action 2...\"], \"challenges\": [\"Challenge 1...\"] }.",
-    "If no specific actions or challenges are mentioned in the provided text, use an empty list [] as the value.",
+    "If no specific actions or challenges are mentioned in the provided text, use an list [\"no challenges found\"] as the value.",
     "Respond ONLY with the JSON object."
   ],
   "expected_output_format": "JSON Object"

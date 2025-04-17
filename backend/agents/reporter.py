@@ -165,11 +165,19 @@ class ReporterAgent:
 
                         result_str = str(worst_item.get('result', ''))
                         description_str = worst_item.get('description', 'N/A')
+                        # --- Added: Extract chunk ID and distance ---
+                        worst_chunk_id = worst_item.get('chunk_id', 'N/A')
+                        worst_distance = worst_item.get('distance', -1.0)
+                        # --- End Added ---
 
                         # Prepend emoji to Control ID line
                         f.write(f"\n{status_emoji} Control ID: {control_id}\n")
                         f.write(f"Global Risk Score: {display_score_str}\n") # New line
                         f.write(f"Description: {description_str}\n")
+                        # --- Added: Write chunk info if available and meaningful ---
+                        if isinstance(worst_distance, float) and worst_distance >= 0 and worst_chunk_id != 'N/A' and not worst_chunk_id.startswith(('PROMPT_', 'EMBEDDING_', 'QUERY_', 'NO_RELEVANT_', 'CONTROLLER_')):
+                             f.write(f"Highest Risk Chunk ID: {worst_chunk_id} (Distance: {worst_distance:.4f})\n")
+                        # --- End Added ---
                         f.write(f"Result (from highest risk instance):\n{result_str}\n")
                         f.write("-" * 30 + "\n") # Slightly longer separator
 

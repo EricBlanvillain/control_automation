@@ -11,15 +11,16 @@ from agents.selector import SelectorAgent
 from agents.controller import ControllerAgent
 from agents.reporter import ReporterAgent
 from agents.grader import GraderAgent
+import chromadb # Import chromadb type hint
 
 # --- Basic Logging Setup ---
-# This should ideally be configured once in the main application entry point (e.g., api_server.py)
-# Basic config to get logs printed to console. Level INFO or DEBUG based on env var.
-log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
-log_level = getattr(logging, log_level_str, logging.INFO)
-logging.basicConfig(level=log_level,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# REMOVED redundant basicConfig - logging should be configured in api_server.py
+# log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
+# log_level = getattr(logging, log_level_str, logging.INFO)
+# logging.basicConfig(level=log_level,
+#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+# --- End Removal ---
 
 # --- Configuration ---
 # Load known categories from environment or use defaults
@@ -129,12 +130,14 @@ class OrchestratorAgent:
         """
         Executes the full chain of control automation for a single document.
         Includes path and fallback content-based category detection.
+        Uses vector store for relevant chunk retrieval.
         """
         logger.info(f"--- Starting Control Chain for: {document_path} ---")
         report_path: Optional[str] = None
         meta_category = ""
+        vector_collection: Optional[chromadb.Collection] = None # Initialize collection variable
 
-        # 1. Determine Meta-Category
+        # 1. Determine Meta-Category (Path-based)
         # 1a. Use specified category if valid
         if specified_meta_category:
             valid_specified_category = specified_meta_category.upper()
@@ -148,48 +151,61 @@ class OrchestratorAgent:
         if not meta_category:
             meta_category = self._determine_category_from_path(document_path)
 
-        # --- Extraction (needed for content detection fallback and main process) --- #
+        # --- Extraction & Embedding (now returns a collection or None) --- #
         logger.info(f"Running ExtractorAgent for document: {document_path}")
-        text_chunks, extraction_error_msg = self.extractor.run(document_path)
+        # Extractor now returns (collection, error_msg)
+        vector_collection, extraction_error_msg = self.extractor.run(document_path)
 
-        # Handle extraction failure *before* content detection fallback
+        # Handle extraction/embedding failure
         if extraction_error_msg:
-            logger.error(f"Extraction failed: {extraction_error_msg}")
-            report_path = self.reporter.run(document_path, [{'id': 'EXTRACTION_FAILURE', 'result': extraction_error_msg, 'score': 10}], is_failure=True)
-            logger.error(f"--- Control Chain Failed (Extraction). Report: {report_path} ---")
+            logger.error(f"Extraction or Embedding failed: {extraction_error_msg}")
+            # Handle cleanup if needed (e.g., delete partial collection if extractor didn't)
+            # Note: Extractor currently attempts cleanup on its errors.
+            report_path = self.reporter.run(document_path, [{'id': 'EXTRACTION_EMBED_FAILURE', 'result': extraction_error_msg, 'score': 10}], is_failure=True)
+            logger.error(f"--- Control Chain Failed (Extraction/Embedding). Report: {report_path} ---")
             return None, report_path
-        elif text_chunks is None: # Defensive check
-             logger.error("Extractor returned None chunks without an error message. Treating as failure.")
-             report_path = self.reporter.run(document_path, [{'id': 'EXTRACTION_FAILURE', 'result': 'Unknown extraction error (None chunks)', 'score': 10}], is_failure=True)
-             logger.error(f"--- Control Chain Failed (Extraction). Report: {report_path} ---")
-             return None, report_path
-
-        # 1c. Try content-based detection if path detection failed and extraction worked
-        if not meta_category:
-             if text_chunks: # Check if we have content to analyze
-                 logger.info("Path detection failed, attempting content-based detection on first chunk.")
-                 meta_category = self._determine_category_from_content(text_chunks[0])
-             else:
-                  logger.warning("Path detection failed, and no content extracted. Cannot attempt content-based detection.")
-
-        # 1d. Final check: Handle failure to determine category after all attempts
-        if not meta_category:
-             failure_msg = f"Could not determine a valid control category for {document_path}. Path and content detection failed. Known: {KNOWN_META_CATEGORIES}"
-             logger.error(failure_msg)
-             report_path = self.reporter.run(document_path, [{'id': 'CATEGORY_FAILURE', 'result': failure_msg, 'score': 10}], is_failure=True)
-             logger.error(f"--- Control Chain Failed (Category Determination). Report: {report_path} ---")
-             return None, report_path
-
-        # --- Proceed with Control Chain using the determined category --- #
-
-        # Handle case: No text content extracted (but extraction didn't fail)
-        if not text_chunks:
-             no_content_msg = f"Extraction successful, but no text content found in {document_path}. Cannot apply controls."
-             logger.warning(no_content_msg)
+        # Handle case where extraction was technically successful but yielded no processable content
+        elif vector_collection is None:
+             # This can happen if the file was empty or extraction yielded nothing before embedding
+             logger.warning(f"Extractor returned no vector collection (likely no content found) for {document_path}. Cannot apply controls.")
+             no_content_msg = f"Extraction successful, but no text content found or embedded in {document_path}. Cannot apply controls."
              detailed_results = [{'id': 'NO_CONTENT', 'description': 'Extraction yielded no content', 'instructions': [], 'result': no_content_msg, 'score': 0}]
              report_path = self.reporter.run(document_path, detailed_results)
              logger.info(f"--- Finished Control Chain (No Content Found). Report: {report_path} ---")
              return detailed_results, report_path
+
+        # 1c. Try content-based detection if path detection failed (requires reading from collection)
+        if not meta_category:
+             try:
+                 # Get the first chunk from the collection for content detection
+                 # Note: This might not be the *best* chunk, but it's a starting point.
+                 # Consider getting a few chunks or a summary if this proves unreliable.
+                 first_chunk_result = vector_collection.peek(limit=1)
+                 if first_chunk_result and first_chunk_result.get('documents') and first_chunk_result['documents'][0]:
+                     first_chunk_text = first_chunk_result['documents'][0]
+                     logger.info("Path detection failed, attempting content-based detection on first chunk from vector store.")
+                     meta_category = self._determine_category_from_content(first_chunk_text)
+                 else:
+                      logger.warning("Path detection failed, and could not retrieve first chunk from vector store for content detection.")
+             except Exception as e:
+                  logger.error(f"Error retrieving first chunk from vector store for content detection: {e}", exc_info=True)
+                  # Continue without content detection if retrieval fails
+
+        # 1d. Final check: Handle failure to determine category
+        if not meta_category:
+             failure_msg = f"Could not determine a valid control category for {document_path} after path and content checks. Known: {KNOWN_META_CATEGORIES}"
+             logger.error(failure_msg)
+             report_path = self.reporter.run(document_path, [{'id': 'CATEGORY_FAILURE', 'result': failure_msg, 'score': 10}], is_failure=True)
+             logger.error(f"--- Control Chain Failed (Category Determination). Report: {report_path} ---")
+             # Cleanup the created collection since we're failing
+             try:
+                 logger.info(f"Attempting to delete unused collection: {vector_collection.name}")
+                 self.extractor.chroma_client.delete_collection(vector_collection.name)
+             except Exception as e:
+                 logger.error(f"Failed to delete collection {vector_collection.name} on category failure: {e}")
+             return None, report_path
+
+        # --- Proceed with Control Chain using the determined category and vector collection --- #
 
         # 3. Select Prompts
         logger.info(f"Running SelectorAgent for category: {meta_category}")
@@ -200,11 +216,47 @@ class OrchestratorAgent:
             detailed_results = [{'id': f'SKIP_{meta_category}', 'description': 'Control execution skipped (no valid prompts)', 'instructions': [], 'result': no_prompts_msg, 'score': 0}]
             report_path = self.reporter.run(document_path, detailed_results)
             logger.info(f"--- Finished Control Chain (No Valid Prompts Found). Report: {report_path} ---")
+            # Cleanup collection
+            try:
+                logger.info(f"Attempting to delete unused collection: {vector_collection.name}")
+                self.extractor.chroma_client.delete_collection(vector_collection.name)
+            except Exception as e:
+                logger.error(f"Failed to delete collection {vector_collection.name} on prompt skip: {e}")
             return detailed_results, report_path
 
-        # 4. Apply Controls
-        logger.info(f"Running ControllerAgent with {len(prompt_files)} prompts on {len(text_chunks)} chunks.")
-        detailed_results_no_score = self.controller.run(text_chunks, prompt_files)
+        # --- Check Vector Collection Type before proceeding ---
+        if not isinstance(vector_collection, chromadb.Collection):
+             error_msg = f"Internal Error: Expected vector_collection to be a ChromaDB Collection, but got {type(vector_collection)}."
+             logger.error(error_msg)
+             # Attempt cleanup if collection object exists somehow (though unlikely)
+             if hasattr(vector_collection, 'name'):
+                  try:
+                      self.extractor.chroma_client.delete_collection(vector_collection.name)
+                  except Exception as e:
+                       logger.error(f"Error during cleanup on type mismatch: {e}")
+             report_path = self.reporter.run(document_path, [{'id': 'INTERNAL_ERROR', 'result': error_msg, 'score': 10}], is_failure=True)
+             return None, report_path
+        # --- End Check ---
+
+        # 4. Apply Controls (using vector collection)
+        # Controller now takes the collection instead of text_chunks
+        logger.info(f"Running ControllerAgent with {len(prompt_files)} prompts using vector collection: {vector_collection.name}")
+        detailed_results_no_score = self.controller.run(vector_collection, prompt_files) # Pass collection
+
+        # --- Cleanup Collection ---
+        # Delete the collection after ControllerAgent is done with it
+        # The check above ensures vector_collection is a Collection here
+        try:
+             logger.info(f"Attempting to delete used collection: {vector_collection.name}")
+             self.extractor.chroma_client.delete_collection(vector_collection.name)
+             logger.info(f"Successfully deleted collection: {vector_collection.name}")
+        except Exception as e:
+             # If vector_collection was confirmed to be a Collection, .name access here should be safe
+             # Error is likely in the delete operation itself.
+             logger.error(f"Failed to delete collection {getattr(vector_collection, 'name', '[unknown]')} after processing: {e}", exc_info=True)
+             # Log error but continue with reporting
+
+        # --- Process Results ---
         if not detailed_results_no_score:
              controller_fail_msg = "Controller agent returned empty results list."
              logger.error(controller_fail_msg)
@@ -212,11 +264,11 @@ class OrchestratorAgent:
         else:
             # 4.5. Grade Results
             logger.info(f"Running GraderAgent on {len(detailed_results_no_score)} results.")
-            detailed_results = self.grader.run(detailed_results_no_score)
+            detailed_results = self.grader.run(detailed_results_no_score) # Grader might need adjustment later
 
         # 5. Create Report
         logger.info("Running ReporterAgent...")
-        report_path = self.reporter.run(document_path, detailed_results)
+        report_path = self.reporter.run(document_path, detailed_results) # Reporter might need adjustment later
 
         logger.info(f"--- Finished Control Chain for: {document_path}. Report: {report_path} ---")
         return detailed_results, report_path

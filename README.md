@@ -7,11 +7,11 @@ This project uses a multi-agent system built with [Agno](https://docs.agno.com/)
 The system allows users to select documents via a web UI and trigger a control chain. The backend orchestrates several agents:
 
 1.  **Orchestrator:** Determines the relevant control meta-category (e.g., KYC, RGPD, LCBFT) based on the document's path or user input. Coordinates the workflow.
-2.  **Extractor:** Extracts text content from the document (supports DOCX, XLSX, basic text; PDF needs enhancement).
+2.  **Extractor:** Extracts text content from the document (supports DOCX, XLSX, TXT). Uses the Mistral OCR API for PDF documents, handling complex layouts and mixed content, returning Markdown.
 3.  **Selector:** Selects appropriate control prompts (defined in JSON files) based on the meta-category.
-4.  **Controller:** Applies each selected control prompt to the extracted text using a configured LLM.
+4.  **Controller:** Applies each selected control prompt to the *most relevant* text chunks (retrieved via vector search using OpenAI embeddings) using a configured LLM.
 5.  **Grader (New):** Evaluates the result of *each* control using an LLM, assigning a risk score from 1 (low risk/pass) to 10 (high risk/fail).
-6.  **Reporter:** Generates a final report file summarizing the results. This report now includes a `--- Summary ---` section indicating the number of controls passed based on the Grader's scores (score < 5 = Pass).
+6.  **Reporter:** Generates a final report file summarizing the results. This report now includes a `--- Summary ---` section indicating the number of controls passed based on the Grader's scores (score < 5 = Pass), and includes chunk details for the highest-risk result.
 
 ## Project Structure
 
@@ -72,12 +72,13 @@ control_automation/
         # Or using uv
         # uv pip install -r requirements.txt
         ```
-        *Note: Ensure libraries for chosen LLM providers (`openai`, `anthropic`) and potentially PDF/OCR are included.*
-    *   **Configure API Keys:** Create a `.env` file in the `control_automation/` root directory (copy from `.env.example`). Set the API key(s) for your chosen LLM provider(s) used by the `ControllerAgent` and `GraderAgent`:
+        *Note: The Tesseract OCR engine is **no longer required** locally as PDF processing now uses the Mistral API.*
+    *   **Configure API Keys:** Create a `.env` file in the `control_automation/` root directory (copy from `.env.example`). Set the API keys for your chosen services:
         ```dotenv
         # .env
-        OPENAI_API_KEY="sk-..."      # If using OpenAI
-        # ANTHROPIC_API_KEY="sk-..." # If using Anthropic
+        OPENAI_API_KEY="sk-..."      # Required for text embeddings (Extractor/Controller)
+        MISTRAL_API_KEY="sk-..."     # Required for PDF OCR (Extractor)
+        # ANTHROPIC_API_KEY="sk-..." # If using Anthropic models (Controller/Grader)
         ```
 
 3.  **Frontend Setup:**
@@ -144,10 +145,14 @@ Use the "Create New Prompt" feature in the Web UI (Section 4) or:
 
 ## Key Implementation Notes & TODOs
 
-*   **PDF/OCR Extraction (`backend/agents/extractor.py`):** PDF handling needs improvement (PyMuPDF for text, OCR for images).
-*   **LLM Configuration (`backend/agents/controller.py`, `backend/agents/grader.py`):** Ensure API keys are set in `.env` and choose appropriate models.
-*   **Category Determination (`backend/agents/orchestrator.py`):** Logic is basic; could be enhanced.
-*   **Chunking:** Implement for large documents if needed.
-*   **Reporting (`backend/agents/reporter.py`):** The reporter currently uses a simple `{id: result}` dict. It could be updated to accept the full detailed results (including scores) from the Orchestrator for more detailed reports.
-*   **Prompt Management:** Add Edit/Delete functionality to the UI.
-*   **Dependencies:** Verify `requirements.txt` and `frontend/package.json` are complete.
+*   **Vector Search:** Implemented using ChromaDB and OpenAI embeddings (`text-embedding-ada-002`) to process only the top `N_RELEVANT_CHUNKS` (default 3, configurable via env var) per control, significantly speeding up processing for large documents.
+*   **PDF Extraction & Chunking:** PDFs are now processed using the Mistral OCR API (`mistral-ocr-latest`), returning structured Markdown. The current `_chunk_text` method uses basic character splitting, which is suboptimal for Markdown; consider implementing Markdown-aware chunking (e.g., splitting by headers/paragraphs) for better semantic context.
+*   **LLM Configuration:** API keys must be configured in `.env` for:
+    *   OpenAI (`OPENAI_API_KEY`): Used for text embeddings in `ExtractorAgent` and `ControllerAgent`.
+    *   Mistral AI (`MISTRAL_API_KEY`): Used for PDF OCR in `ExtractorAgent`.
+    *   Controller/Grader LLMs (e.g., `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`): Depending on the models chosen (`CONTROLLER_LLM_MODEL`, `GRADER_LLM_MODEL`).
+*   **Shared Utilities:** OpenAI embedding logic has been refactored into `backend/utils/embedding_utils.py`.
+*   **Reporting (`backend/agents/reporter.py`):** Reports now include `chunk_id` and `distance` for the highest-risk result, providing more context.
+*   **Category Determination (`backend/agents/orchestrator.py`):** Logic for determining control category from path/content is basic and could be improved (e.g., using LLM classification).
+*   **Prompt Management:** The UI allows viewing and creating prompts; Edit/Delete functionality could be added.
+*   **Dependencies:** Ensure `requirements.txt` (Python backend) and `frontend/package.json` (React frontend) are kept up-to-date. Tesseract is no longer required.

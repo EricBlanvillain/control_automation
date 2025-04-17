@@ -524,7 +524,7 @@ function App() {
     <div id="App">
       <div className="title-container">
         <h1>Agentic Control Center</h1>
-        <p className="subtitle">Powered by Agno AI</p>
+        <p className="subtitle">Powered by Agentic AI</p>
       </div>
 
       {/* Input & Config Section */}

@@ -42,6 +42,16 @@ pathlib.Path(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
 API_LOG_LEVEL_STR = os.getenv('API_LOG_LEVEL', 'INFO').upper()
 API_LOG_LEVEL = getattr(logging, API_LOG_LEVEL_STR, logging.INFO)
 
+# --- Setup Logging ---
+logging.basicConfig(
+    level=API_LOG_LEVEL,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True # Use force=True to override any basicConfig possibly set by libraries
+)
+logger = logging.getLogger(__name__) # Get logger for this module
+logger.info(f"Logging configured at level: {logging.getLevelName(API_LOG_LEVEL)}")
+# --- End Setup Logging ---
+
 # --- Pydantic Models for Request/Response ---
 class ControlRequest(BaseModel):
     target_path: str

@@ -3,7 +3,6 @@ agno
 
 # LLM Providers (Add based on usage in controller.py)
 openai
-anthropic
 
 # Document Processing
 python-docx # For .docx files
@@ -27,3 +26,18 @@ python-dotenv # To load .env file
 # duckduckgo-search # If using DuckDuckGoTools
 # yfinance   # If using YFinanceTools
 # requests   # For potential API calls (e.g., custom OCR)
+
+# Vector Store (add as needed)
+chromadb # Added for in-memory vector storage
+
+# -- Added for Mistral API --
+mistralai
+# -------------------------
+
+# -- Removed OCR dependencies ---
+# pillow        # Image handling for OCR - No longer needed
+# pytesseract   # Python wrapper for Tesseract OCR engine - No longer needed
+# ---------------------------
+
+# Optional: For advanced text processing or specific file types
+# pandas
