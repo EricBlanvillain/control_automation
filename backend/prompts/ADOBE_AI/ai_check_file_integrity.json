@@ -1,0 +1,18 @@
+{
+  "control_id": "ADOBE_AI_003",
+  "description": "Verify file integrity of Adobe Illustrator file: metadata completeness, creator tool, font embedding, and content presence.",
+  "meta_category": "ADOBE_AI",
+  "prompt_instructions": [
+    "Scan the document text extracted from an Adobe Illustrator (.ai) file.",
+    "Check for metadata fields: title, author, creation date, and modification date.",
+    "Verify that the creator tool is Adobe Illustrator (look for 'Adobe Illustrator' or 'Illustrator' in creator/producer metadata).",
+    "Check if fonts are embedded in the document (look for font embedding references or embedded font data).",
+    "Verify that the document contains actual content (not an empty or placeholder file).",
+    "Format the output as JSON: { \"title\": \"<title or null>\", \"author\": \"<author or null>\", \"creation_date\": \"<date or null>\", \"modification_date\": \"<date or null>\", \"creator_tool\": \"<tool name or null>\", \"is_illustrator_file\": <true/false>, \"fonts_embedded\": <true/false>, \"has_content\": <true/false>, \"metadata_complete\": <true/false>, \"status\": \"<Valid/Invalid/Incomplete>\" }.",
+    "Set metadata_complete to true only if title, author, and at least one date are present.",
+    "Set status to 'Valid' if is_illustrator_file is true, has_content is true, and metadata_complete is true.",
+    "Set status to 'Incomplete' if some checks pass but not all. Set status to 'Invalid' if critical checks fail.",
+    "Respond ONLY with the JSON output."
+  ],
+  "expected_output_format": "JSON Object"
+}

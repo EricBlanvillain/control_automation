@@ -1,0 +1,16 @@
+{
+  "control_id": "ADOBE_AI_001",
+  "description": "Verify brand compliance of Adobe Illustrator file: fonts, colors, and logo/brand presence.",
+  "meta_category": "ADOBE_AI",
+  "prompt_instructions": [
+    "Scan the document text extracted from an Adobe Illustrator (.ai) file.",
+    "Check if the fonts used match standard brand font families (e.g., Helvetica, Arial, Futura, or any brand-specific fonts mentioned in the document).",
+    "Look for brand color references in Pantone, hex (#RRGGBB), or CMYK format.",
+    "Detect the presence of a logo or brand name in the document content.",
+    "Format the output as JSON: { \"fonts_found\": [\"Font1\", \"Font2\"], \"brand_fonts_compliant\": <true/false>, \"colors_found\": [\"Color1\", \"Color2\"], \"color_format\": \"<Pantone/Hex/CMYK/Mixed/None>\", \"logo_or_brand_detected\": <true/false>, \"brand_name\": \"<name or null>\", \"status\": \"<Compliant/NonCompliant/Inconclusive>\" }.",
+    "If no font information is found, set brand_fonts_compliant to false and status to 'Inconclusive'.",
+    "If no color references are found, set color_format to 'None' and status to 'Inconclusive'.",
+    "Respond ONLY with the JSON output."
+  ],
+  "expected_output_format": "JSON Object"
+}

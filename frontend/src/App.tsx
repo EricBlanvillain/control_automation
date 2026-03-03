@@ -3,7 +3,7 @@ import axios from 'axios';
 import './App.css';
 
 // Updated list of known categories
-const KNOWN_META_CATEGORIES = ["KYC", "RGPD", "LCBFT", "MIFID", "RSE", "INTERNAL_REPORTING"];
+const KNOWN_META_CATEGORIES = ["KYC", "RGPD", "LCBFT", "MIFID", "RSE", "INTERNAL_REPORTING", "ADOBE_AI"];
 // Define the backend API URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'; // Use env var or default
 

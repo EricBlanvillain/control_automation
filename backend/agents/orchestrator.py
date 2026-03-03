@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # --- Configuration ---
 # Load known categories from environment or use defaults
-DEFAULT_CATEGORIES = "KYC,RGPD,LCBFT,MIFID,RSE,INTERNAL_REPORTING" # Default list
+DEFAULT_CATEGORIES = "KYC,RGPD,LCBFT,MIFID,RSE,INTERNAL_REPORTING,ADOBE_AI" # Default list
 KNOWN_META_CATEGORIES = [cat.strip() for cat in os.getenv("KNOWN_META_CATEGORIES", DEFAULT_CATEGORIES).split(',') if cat.strip()]
 
 logger.info(f"Orchestrator: Using known categories: {KNOWN_META_CATEGORIES}")
@@ -37,7 +37,8 @@ CATEGORY_KEYWORDS = {
     "LCBFT": [r'lutte contre le blanchiment', r'financement du terrorisme', r'\blcb.?ft\b', r'aml', r'anti.?money laundering'],
     "MIFID": [r'markets in financial instruments directive', r'\bmifid\b', r'financial instrument', r'investment advice', r'appropriateness'],
     "RSE": [r'responsabilité sociale des entreprises', r'\brse\b', r'csr', r'corporate social responsibility', r'environmental', r'social', r'governance', r'esg'],
-    "INTERNAL_REPORTING": [r'internal report', r'monthly summary', r'activity log', r'management update']
+    "INTERNAL_REPORTING": [r'internal report', r'monthly summary', r'activity log', r'management update'],
+    "ADOBE_AI": [r'adobe illustrator', r'\billustrator\b', r'\.ai\b', r'vector', r'artboard', r'cmyk', r'pantone']
 }
 
 class OrchestratorAgent:

@@ -1,0 +1,17 @@
+{
+  "control_id": "ADOBE_AI_002",
+  "description": "Verify print readiness of Adobe Illustrator file: color mode, bleed/trim marks, font handling, and resolution.",
+  "meta_category": "ADOBE_AI",
+  "prompt_instructions": [
+    "Scan the document text extracted from an Adobe Illustrator (.ai) file.",
+    "Check if the document uses CMYK color mode (look for CMYK references or color space declarations).",
+    "Look for references to bleed area, trim marks, or crop marks.",
+    "Determine if fonts are outlined (converted to paths) or embedded in the document.",
+    "Check for resolution references and whether they meet the 300 DPI minimum for print.",
+    "Format the output as JSON: { \"color_mode\": \"<CMYK/RGB/Mixed/Unknown>\", \"is_cmyk\": <true/false>, \"bleed_marks_present\": <true/false>, \"trim_marks_present\": <true/false>, \"fonts_outlined_or_embedded\": <true/false>, \"resolution_dpi\": <number or null>, \"resolution_adequate\": <true/false/null>, \"status\": \"<PrintReady/NotPrintReady/Inconclusive>\" }.",
+    "Set status to 'PrintReady' only if color mode is CMYK, fonts are outlined or embedded, and resolution is 300+ DPI.",
+    "Set status to 'Inconclusive' if key information cannot be determined from the extracted text.",
+    "Respond ONLY with the JSON output."
+  ],
+  "expected_output_format": "JSON Object"
+}
