@@ -1,27 +1,19 @@
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat # Example model
-from agno.models.anthropic import Claude   # Example model
+from agno.models.anthropic import Claude
 import json
 import os
 import logging
 from typing import Any, List, Optional, Dict
-import chromadb # Import ChromaDB type hint
-from openai import OpenAI, OpenAIError # Import OpenAI for embeddings
-# --- Import shared utility ---
-from utils.embedding_utils import get_openai_embeddings
-# --- End Import ---
+import chromadb
+from mistralai import Mistral
+from utils.embedding_utils import get_mistral_embeddings
 
-# Set up logger
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-# Read model ID from environment variable or use default
-DEFAULT_CONTROLLER_MODEL = "gpt-4.1-mini" # Adjust as needed
+DEFAULT_CONTROLLER_MODEL = "claude-sonnet-4-20250514"
 CONTROLLER_MODEL_ID = os.getenv("CONTROLLER_LLM_MODEL", DEFAULT_CONTROLLER_MODEL)
-# OpenAI Configuration for embeddings (should match extractor)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002"
-# Number of relevant chunks to retrieve from vector store
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 DEFAULT_RELEVANT_CHUNKS = 3
 N_RELEVANT_CHUNKS = int(os.getenv("CONTROLLER_RELEVANT_CHUNKS", DEFAULT_RELEVANT_CHUNKS))
 
@@ -33,9 +25,8 @@ class ControllerAgent:
     """
     def __init__(self):
         logger.info(f"Initializing ControllerAgent with LLM model: {CONTROLLER_MODEL_ID}")
-        # LLM Agent for control execution
         self.llm_agent = Agent(
-             model=OpenAIChat(id=CONTROLLER_MODEL_ID),
+             model=Claude(id=CONTROLLER_MODEL_ID),
              instructions=[
                  "You are a control verification assistant.",
                  "Execute the specific instruction provided for the control precisely based on the provided text chunk.",
@@ -44,19 +35,19 @@ class ControllerAgent:
              markdown=False,
              debug_mode=os.getenv('AGNO_DEBUG_MODE', 'false').lower() == 'true'
          )
-        # OpenAI Client for embedding control queries
+        # Mistral client for embedding control queries
         try:
-            self.openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-            if not self.openai_client:
-                 logger.error("Failed to initialize OpenAI client for embeddings (missing API key).")
+            self.mistral_client = Mistral(api_key=MISTRAL_API_KEY) if MISTRAL_API_KEY else None
+            if not self.mistral_client:
+                 logger.error("Failed to initialize Mistral client for embeddings (missing API key).")
         except Exception as e:
-            logger.error(f"Failed to initialize OpenAI client for embeddings: {e}", exc_info=True)
-            self.openai_client = None
+            logger.error(f"Failed to initialize Mistral client for embeddings: {e}", exc_info=True)
+            self.mistral_client = None
 
         logger.info("ControllerAgent initialized.")
 
     # --- Modified run method ---
-    def run(self, vector_collection: chromadb.Collection, prompt_files: list[str]) -> list[dict[str, Any]]:
+    def run(self, vector_collection: chromadb.Collection, prompt_files: List[str]) -> List[Dict[str, Any]]:
         """
         Applies each control prompt to the N most relevant chunks found in the vector store.
         Returns a flattened list of dictionaries, one per relevant chunk processed for each control,
@@ -66,9 +57,9 @@ class ControllerAgent:
              logger.error("Received an invalid or empty vector collection.")
              # Return specific error marker?
              return [{'id': 'CONTROLLER_ERROR', 'result': 'Invalid vector collection received', 'chunk_id': 'N/A'}]
-        if not self.openai_client:
-             logger.error("OpenAI client for embeddings not available in ControllerAgent.")
-             return [{'id': 'CONTROLLER_ERROR', 'result': 'OpenAI client not configured for embeddings', 'chunk_id': 'N/A'}]
+        if not self.mistral_client:
+             logger.error("Mistral client for embeddings not available in ControllerAgent.")
+             return [{'id': 'CONTROLLER_ERROR', 'result': 'Mistral client not configured for embeddings', 'chunk_id': 'N/A'}]
 
         logger.info(f"Applying {len(prompt_files)} controls using vector collection '{vector_collection.name}'. Will query top {N_RELEVANT_CHUNKS} chunks.")
         detailed_results = []
@@ -113,8 +104,7 @@ class ControllerAgent:
 
             # --- Generate Query Embedding for the Control ---
             query_text = f"Control Description: {description}\nInstructions:\n" + "\n".join(f"- {inst}" for inst in instructions)
-            # Use the shared utility function, passing the client instance
-            query_embedding = get_openai_embeddings(self.openai_client, [query_text])
+            query_embedding = get_mistral_embeddings(self.mistral_client, [query_text])
 
             if not query_embedding:
                  logger.error(f"Failed to generate query embedding for control '{control_id}'. Skipping.")

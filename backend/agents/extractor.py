@@ -12,16 +12,9 @@ import uuid
 
 # -- Added/Modified Imports ---
 import chromadb
-from chromadb.utils import embedding_functions
-from openai import OpenAI, OpenAIError # Keep for embeddings
-import mistralai # Added Mistral AI client
-from mistralai import Mistral # Correct import for the client
-# -- Removed OCR Imports ---
-# import pytesseract # Removed
-# from PIL import Image # Removed
-# --- End Added/Modified Imports ---
+from mistralai import Mistral
 # --- Import shared utility ---
-from utils.embedding_utils import get_openai_embeddings
+from utils.embedding_utils import get_mistral_embeddings
 # --- End Import ---
 
 # Set up logger
@@ -36,16 +29,12 @@ DEFAULT_CHUNK_OVERLAP = int(os.getenv("EXTRACTOR_CHUNK_OVERLAP", 200))
 CHUNK_SIZE = DEFAULT_CHUNK_SIZE
 CHUNK_OVERLAP = DEFAULT_CHUNK_OVERLAP
 
-# OpenAI Configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# Mistral Configuration
+# Mistral Configuration (used for both OCR and embeddings)
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
 logger.info(f"Extractor configured with Chunk Size: {CHUNK_SIZE}, Overlap: {CHUNK_OVERLAP}")
-if not OPENAI_API_KEY:
-    logger.warning("OPENAI_API_KEY environment variable not set. OpenAI Embeddings will fail.")
 if not MISTRAL_API_KEY:
-    logger.warning("MISTRAL_API_KEY environment variable not set. Mistral OCR will fail.")
+    logger.warning("MISTRAL_API_KEY environment variable not set. Mistral OCR and embeddings will fail.")
 
 # Define return type for extraction methods: (content: str | None, error_msg: str | None)
 ExtractionResult = Tuple[Optional[str], Optional[str]]
@@ -59,21 +48,12 @@ class ExtractorAgent:
     """
     def __init__(self):
         logger.info("Initializing ExtractorAgent...")
-        self.openai_client = None
         self.mistral_client = None
         self.chroma_client = None
         try:
             logger.critical("ENTERED ExtractorAgent __init__ TRY block")
 
-            # Initialize OpenAI client (for embeddings)
-            logger.debug("Attempting OpenAI client init...")
-            if OPENAI_API_KEY:
-                self.openai_client = OpenAI(api_key=OPENAI_API_KEY)
-                logger.debug("OpenAI client potentially initialized.")
-            else:
-                logger.error("OpenAI client skipped: API key missing.")
-
-            # Initialize Mistral client (for OCR)
+            # Initialize Mistral client (for OCR and embeddings)
             logger.debug("Attempting Mistral client init...")
             if MISTRAL_API_KEY:
                 self.mistral_client = Mistral(api_key=MISTRAL_API_KEY)
@@ -102,8 +82,8 @@ class ExtractorAgent:
         # Check client status immediately after try-except
         if not self.chroma_client:
             logger.warning("ExtractorAgent __init__ Check: self.chroma_client is None AFTER try-except.")
-        if not self.openai_client:
-            logger.warning("ExtractorAgent __init__ Check: self.openai_client is None AFTER try-except.")
+        if not self.mistral_client:
+            logger.warning("ExtractorAgent __init__ Check: self.mistral_client is None AFTER try-except.")
 
         logger.info("ExtractorAgent initialized.")
 
@@ -286,8 +266,8 @@ class ExtractorAgent:
             error_msg = f"Error: File not found: {file_path}"
             logger.error(error_msg)
             return None, error_msg
-        if not self.openai_client:
-            error_msg = "Error: ExtractorAgent not fully initialized (OpenAI client missing). Check OPENAI_API_KEY."
+        if not self.mistral_client:
+            error_msg = "Error: ExtractorAgent not fully initialized (Mistral client missing). Check MISTRAL_API_KEY."
             logger.error(error_msg)
             return None, error_msg
         if not self.chroma_client:
@@ -331,8 +311,8 @@ class ExtractorAgent:
             logger.warning(f"Chunking resulted in zero chunks for {file_path}. Cannot proceed.")
             return None, None # Success, but no chunks to embed
 
-        # --- Embedding --- NOW THIS CODE WILL EXECUTE ---
-        embeddings = get_openai_embeddings(self.openai_client, text_chunks)
+        # --- Embedding ---
+        embeddings = get_mistral_embeddings(self.mistral_client, text_chunks)
         if embeddings is None:
             # Error is already logged by the utility function
             return None, "Error: Failed to generate embeddings."

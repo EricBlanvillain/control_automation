@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from agno.agent import Agent
 
 # Set up basic logging
@@ -17,7 +17,7 @@ class SelectorAgent:
     Agent 3: Selects relevant control prompts (JSON files) based on meta-category.
     Includes basic validation of prompt files.
     """
-    def __init__(self, prompts_dir: str | None = None):
+    def __init__(self, prompts_dir: Optional[str] = None):
         # Use provided dir, env variable, or default
         self.prompts_dir = prompts_dir or os.getenv("PROMPTS_DIR", "prompts")
         logger.info(f"SelectorAgent initialized. Using prompts directory: {self.prompts_dir}")
@@ -48,7 +48,7 @@ class SelectorAgent:
             logger.error(f"Error reading or validating prompt file {file_path}: {e}", exc_info=True)
             return False
 
-    def run(self, meta_category: str) -> list[str]:
+    def run(self, meta_category: str) -> List[str]:
         """
         Finds and validates JSON prompt files within the specified meta-category directory.
         Returns a list of paths to valid prompt files.

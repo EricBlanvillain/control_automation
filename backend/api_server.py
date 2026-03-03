@@ -21,8 +21,7 @@ load_dotenv()
 
 # Import your orchestrator agent
 from agents.orchestrator import OrchestratorAgent, KNOWN_META_CATEGORIES
-from agno.agent import Agent # Need Agent class
-from agno.models.openai import OpenAIChat # Or other models if needed
+from agno.agent import Agent
 from agno.models.anthropic import Claude
 import traceback # For detailed error logging
 

@@ -2,7 +2,7 @@ import logging
 import os
 import pathlib # Using pathlib for easier path manipulation
 import re # Import regex for keyword matching
-from typing import Optional, List, Dict, Any # <-- Added List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from agno.agent import Agent
 from agno.team.team import Team # Potentially useful for complex orchestration
 # Import other agents
@@ -126,7 +126,7 @@ class OrchestratorAgent:
         logger.info("Content Detection: No category match found based on keywords.")
         return ""
 
-    def run_control_chain(self, document_path: str, specified_meta_category: str | None = None) -> tuple[Optional[List[Dict[str, Any]]], Optional[str]]:
+    def run_control_chain(self, document_path: str, specified_meta_category: Optional[str] = None) -> Tuple[Optional[List[Dict[str, Any]]], Optional[str]]:
         """
         Executes the full chain of control automation for a single document.
         Includes path and fallback content-based category detection.

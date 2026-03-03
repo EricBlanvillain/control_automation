@@ -1,7 +1,7 @@
 import os
 import datetime
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 # from agno.agent import Agent # No longer using Agno directly here
 
 # Set up logger
@@ -15,7 +15,7 @@ class ReporterAgent:
     Agent 5: Creates a final report summarizing the control results.
     Includes a pass/fail summary and control descriptions.
     """
-    def __init__(self, report_dir: str | None = None):
+    def __init__(self, report_dir: Optional[str] = None):
         # Use provided dir, env variable, or default
         self.report_dir = report_dir or os.getenv("REPORTS_DIR", "reports")
         logger.info(f"ReporterAgent initialized. Using report directory: {self.report_dir}")

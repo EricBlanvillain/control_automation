@@ -2,16 +2,11 @@ import os
 from typing import List, Dict, Any
 import logging
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat # Or other models
 from agno.models.anthropic import Claude
-import traceback
 
-# Set up logger
 logger = logging.getLogger(__name__)
 
-# --- Configuration ---
-# Read model ID from environment variable or use default
-DEFAULT_GRADER_MODEL = "gpt-4.1-nano" # Default model
+DEFAULT_GRADER_MODEL = "claude-sonnet-4-20250514"
 GRADER_MODEL_ID = os.getenv("GRADER_LLM_MODEL", DEFAULT_GRADER_MODEL)
 
 class GraderAgent:
@@ -23,8 +18,7 @@ class GraderAgent:
         logger.info(f"Initializing GraderAgent with model: {GRADER_MODEL_ID}")
         # TODO: Add logic to select model provider (OpenAI/Anthropic) based on model ID if needed
         self.grade_llm = Agent(
-            model=OpenAIChat(id=GRADER_MODEL_ID), # Use configured model ID
-            # model=Claude(id=GRADER_MODEL_ID), # Example: Use if model ID indicates Anthropic
+            model=Claude(id=GRADER_MODEL_ID),
             instructions=[
                 "You are an AI assistant evaluating the risk level of a control result based on the control's goal.",
                 "Assess the risk level on a scale of 1 to 10, where 1 is very low risk (success/compliance) and 10 is very high risk (failure/non-compliance).",
