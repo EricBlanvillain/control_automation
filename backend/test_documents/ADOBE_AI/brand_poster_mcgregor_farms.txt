@@ -1,0 +1,45 @@
+ADOBE ILLUSTRATOR DOCUMENT — EXTRACTED METADATA & CONTENT
+==========================================================
+
+File: McGregor_Farms_Spring_Poster_2024.ai
+Creator: Adobe Illustrator 28.3 (Macintosh)
+Title: McGregor Farms — Spring Harvest Poster
+Author: Jemima Puddle-Duck
+Creation Date: 2024-03-15
+Modification Date: 2024-04-02
+
+Document Properties:
+  Color Mode: CMYK
+  Artboard Size: 420mm x 594mm (A2)
+  Artboards: 1
+  Resolution: 300 DPI
+  Bleed: 3mm all sides
+  Trim Marks: Present
+
+Fonts Used:
+  - Futura PT Bold (Embedded)
+  - Futura PT Book (Embedded)
+  - Montserrat Regular (Embedded)
+
+Color Swatches:
+  - McGregor Green: Pantone 356 C / CMYK(85, 12, 100, 3)
+  - Earth Brown: Pantone 7519 C / CMYK(30, 55, 70, 40)
+  - Harvest Gold: #D4A843 / CMYK(15, 30, 80, 0)
+  - Pure White: CMYK(0, 0, 0, 0)
+
+Content Summary:
+  Headline: "McGregor Farms — Fresh From Our Garden to Your Table"
+  Logo: McGregor Farms logo (vector, top-center)
+  Body text: Seasonal produce listing with illustrated vegetable icons
+  Footer: "McGregor Farms Ltd. | Est. 1893 | www.mcgregorfarms.lit"
+  Brand tagline: "No Rabbits Allowed"
+  QR Code: Vector-based, links to online catalogue
+
+Linked Assets:
+  - mcgregor_logo_cmyk.eps (Embedded)
+  - vegetable_icons_set.ai (Embedded)
+  - spring_background_pattern.ai (Linked — path: /Assets/Patterns/)
+
+Notes:
+  All fonts outlined in a separate "Print Ready" layer.
+  Document passes Adobe Preflight for offset printing.

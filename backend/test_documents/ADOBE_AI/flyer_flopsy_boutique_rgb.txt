@@ -1,0 +1,42 @@
+ADOBE ILLUSTRATOR DOCUMENT — EXTRACTED METADATA & CONTENT
+==========================================================
+
+File: Flopsy_Boutique_Summer_Sale.ai
+Creator: Adobe Illustrator 27.1 (Windows)
+Title: (untitled)
+Author: (none)
+Creation Date: 2024-06-10
+Modification Date: (none)
+
+Document Properties:
+  Color Mode: RGB
+  Artboard Size: 1080px x 1080px
+  Artboards: 1
+  Resolution: 72 DPI
+  Bleed: None
+  Trim Marks: None
+
+Fonts Used:
+  - Comic Sans MS Regular (System font — not embedded)
+  - Impact Regular (System font — not embedded)
+
+Color Swatches:
+  - Pink: #FF69B4
+  - Yellow: #FFFF00
+  - Black: RGB(0, 0, 0)
+
+Content Summary:
+  Headline: "BIG SUMMER SALE!!!"
+  Body text: "Everything 50% off! Visit Flopsy's Boutique today!"
+  Address: "3 Burrow Lane, Near Sawrey"
+  No logo present
+  No brand name in standard position
+
+Linked Assets:
+  - stock_photo_flowers.jpg (Linked — missing file warning)
+
+Notes:
+  No font embedding or outlining detected.
+  RGB color mode — not suitable for print production.
+  Missing metadata fields (title, author).
+  Linked asset not found — may cause output errors.

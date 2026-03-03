@@ -1,0 +1,54 @@
+ADOBE ILLUSTRATOR DOCUMENT — EXTRACTED METADATA & CONTENT
+==========================================================
+
+File: Nutkin_Preserves_Jar_Label.ai
+Creator: Adobe Illustrator 28.0 (Macintosh)
+Title: Nutkin's Nut Preserves — Jar Label
+Author: Squirrel Nutkin
+Creation Date: 2024-09-01
+Modification Date: 2024-09-14
+
+Document Properties:
+  Color Mode: CMYK
+  Artboard Size: 200mm x 80mm
+  Artboards: 2 (Front Label, Back Label)
+  Resolution: 300 DPI
+  Bleed: 2mm all sides
+  Trim Marks: Present
+  Dieline: Present (separate layer, spot color)
+
+Fonts Used:
+  - Garamond Premier Pro Regular (Embedded)
+  - Garamond Premier Pro Italic (Embedded)
+  - Helvetica Neue Bold (Outlined)
+
+Color Swatches:
+  - Nutkin Brown: Pantone 469 C / CMYK(25, 55, 75, 30)
+  - Forest Green: Pantone 3435 C / CMYK(95, 20, 80, 30)
+  - Cream: CMYK(2, 5, 15, 0)
+  - Gold Foil: Pantone 871 C (Metallic spot color)
+
+Content Summary:
+  Front Label:
+    Brand name: "Nutkin's Nut Preserves"
+    Logo: Nutkin's acorn logo (vector, centered)
+    Product: "Hazelnut & Acorn Spread"
+    Weight: "340g"
+    Illustration: Hand-drawn hazelnut branch (vector)
+
+  Back Label:
+    Ingredients list: Hazelnuts (60%), sugar, acorn flour, salt
+    Nutritional information table
+    Barcode: EAN-13 (vector)
+    "Best before: See lid"
+    Producer: "Nutkin's Preserves Co. | Owl Island, Derwentwater"
+    Organic certification mark (embedded vector)
+
+Linked Assets:
+  - nutkin_acorn_logo.eps (Embedded)
+  - organic_cert_mark.svg (Embedded)
+
+Notes:
+  All text outlined on "PRINT" layer.
+  Dieline on separate "CUT" layer with overprint.
+  File validated for flexographic printing.
