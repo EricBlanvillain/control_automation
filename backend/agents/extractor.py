@@ -9,6 +9,7 @@ import openpyxl
 # For PDF/OCR, integration is needed. Placeholder libraries:
 # import fitz  # No longer needed for PDF text extraction
 import uuid
+import pikepdf
 
 # -- Added/Modified Imports ---
 import chromadb
@@ -222,6 +223,105 @@ class ExtractorAgent:
             logger.error(error_msg, exc_info=True)
             return None, error_msg
 
+    def _extract_from_ai(self, file_path: str) -> ExtractionResult:
+        """Extracts metadata and visible text from an Adobe Illustrator (.ai) file.
+
+        Modern .ai files are PDF-compatible. Uses pikepdf for metadata/fonts
+        and reuses the existing Mistral OCR pipeline for visible text content.
+        """
+        logger.info(f"Attempting AI (Adobe Illustrator) extraction for {file_path}")
+
+        metadata_parts: List[str] = []
+        pdf = None
+
+        # 1. Validate PDF compatibility and extract metadata + fonts via pikepdf
+        try:
+            pdf = pikepdf.open(file_path)
+        except pikepdf.PdfError as e:
+            error_msg = (
+                f"Error: Cannot open '{os.path.basename(file_path)}' as a PDF-compatible file. "
+                f"This is likely a legacy pre-CS PostScript .ai file, which is not supported. "
+                f"Details: {e}"
+            )
+            logger.error(error_msg)
+            return None, error_msg
+        except Exception as e:
+            error_msg = f"Error: Unexpected error opening .ai file: {e}"
+            logger.error(error_msg, exc_info=True)
+            return None, error_msg
+
+        # 2. Extract XMP metadata
+        try:
+            with pdf.open_metadata() as xmp:
+                xmp_fields = {
+                    "Title": "dc:title",
+                    "Author": "dc:creator",
+                    "Description": "dc:description",
+                    "Keywords": "pdf:Keywords",
+                    "Creator Tool": "xmp:CreatorTool",
+                    "Create Date": "xmp:CreateDate",
+                    "Modify Date": "xmp:ModifyDate",
+                    "Producer": "pdf:Producer",
+                }
+                for label, key in xmp_fields.items():
+                    value = xmp.get(key)
+                    if value:
+                        metadata_parts.append(f"- **{label}**: {value}")
+        except Exception as e:
+            logger.warning(f"Could not extract XMP metadata from {file_path}: {e}")
+
+        # 3. Extract font names
+        try:
+            font_names: List[str] = []
+            for page in pdf.pages:
+                resources = page.get("/Resources")
+                if resources is None:
+                    continue
+                fonts = resources.get("/Font")
+                if fonts is None:
+                    continue
+                for font_key in fonts.keys():
+                    font_obj = fonts[font_key]
+                    base_font = font_obj.get("/BaseFont")
+                    if base_font:
+                        name = str(base_font).lstrip("/")
+                        if name not in font_names:
+                            font_names.append(name)
+            if font_names:
+                metadata_parts.append(f"- **Fonts**: {', '.join(font_names)}")
+        except Exception as e:
+            logger.warning(f"Could not extract fonts from {file_path}: {e}")
+
+        # 4. Close pikepdf handle
+        pdf.close()
+
+        # 5. Get visible text via existing Mistral OCR pipeline
+        ocr_content, ocr_error = self._extract_from_pdf(file_path)
+
+        # 6. Combine results
+        has_metadata = len(metadata_parts) > 0
+        has_ocr = ocr_content is not None
+
+        if not has_metadata and not has_ocr:
+            error_msg = f"Error: Could not extract any content from .ai file '{os.path.basename(file_path)}'."
+            if ocr_error:
+                error_msg += f" OCR error: {ocr_error}"
+            logger.error(error_msg)
+            return None, error_msg
+
+        sections: List[str] = []
+        if has_metadata:
+            sections.append("## Document Metadata\n" + "\n".join(metadata_parts))
+        if has_ocr:
+            sections.append("## Visible Content\n" + ocr_content)
+        elif ocr_error:
+            sections.append(f"## Visible Content\n*Warning: OCR extraction failed — {ocr_error}*")
+            logger.warning(f"AI file {file_path}: metadata extracted but OCR failed: {ocr_error}")
+
+        combined = "\n\n".join(sections)
+        logger.info(f"Successfully extracted content from AI file {file_path}. Total length: {len(combined)}")
+        return combined, None
+
     def _chunk_text(self, text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
         """Splits text into chunks of a specified size with overlap."""
         # TODO: Current chunking is naive for Markdown. Consider parsing Markdown
@@ -284,7 +384,8 @@ class ExtractorAgent:
             '.docx': self._extract_from_docx,
             '.xlsx': self._extract_from_xlsx,
             '.pdf': self._extract_from_pdf,
-            '.txt': self._extract_from_txt
+            '.txt': self._extract_from_txt,
+            '.ai': self._extract_from_ai
         }.get(extension)
 
         if extractor_method:

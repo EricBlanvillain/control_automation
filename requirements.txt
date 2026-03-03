@@ -34,6 +34,9 @@ chromadb # Added for in-memory vector storage
 mistralai
 # -------------------------
 
+# -- Adobe Illustrator (.ai) PDF-based extraction --
+pikepdf
+
 # -- Removed OCR dependencies ---
 # pillow        # Image handling for OCR - No longer needed
 # pytesseract   # Python wrapper for Tesseract OCR engine - No longer needed

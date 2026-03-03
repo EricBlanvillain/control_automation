@@ -41,7 +41,7 @@ def main():
     elif os.path.isdir(target_path):
         # Process all supported files in a directory
         print(f"Processing directory: {target_path}")
-        supported_extensions = ('.docx', '.xlsx', '.pdf', '.txt')
+        supported_extensions = ('.docx', '.xlsx', '.pdf', '.txt', '.ai')
         processed_files = 0
         for root, _, files in os.walk(target_path):
             for file in files:

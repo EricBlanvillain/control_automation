@@ -578,7 +578,7 @@ function App() {
                   handleFileUpload(e.target.files[0]);
                 }
               }}
-              accept=".txt,.pdf,.docx,.xlsx" // Specify acceptable file types
+              accept=".txt,.pdf,.docx,.xlsx,.ai" // Specify acceptable file types
             />
             {isUploading ? (
               <p>Uploading...</p>
